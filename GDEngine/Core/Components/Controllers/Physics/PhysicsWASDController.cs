@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GDEngine.Core.Entities;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
 namespace GDEngine.Core.Components.Controllers.Physics
@@ -20,15 +21,15 @@ namespace GDEngine.Core.Components.Controllers.Physics
         private RigidBody _rigidBody = null!;
 
         private float _moveSpeed = 6f;
-        private float _boostMultiplier = 2f;
 
         private Keys _forwardKey = Keys.W;
         private Keys _backwardKey = Keys.S;
         private Keys _leftKey = Keys.A;
         private Keys _rightKey = Keys.D;
-        private Keys _boostKey = Keys.LeftShift;
 
         private KeyboardState _keyboardState;
+
+        private GameObject _obj;
 
         #endregion
 
@@ -44,12 +45,12 @@ namespace GDEngine.Core.Components.Controllers.Physics
         }
 
         /// <summary>
-        /// Multiplier applied to <see cref="MoveSpeed"/> when the boost key is held.
+        /// Collision object
         /// </summary>
-        public float BoostMultiplier
+        public GameObject Obj
         {
-            get => _boostMultiplier;
-            set => _boostMultiplier = value > 0f ? value : 1f;
+            get => _obj;
+            set => _obj = value;
         }
 
         /// <summary>
@@ -88,18 +89,6 @@ namespace GDEngine.Core.Components.Controllers.Physics
             set => _rightKey = value;
         }
 
-        /// <summary>
-        /// Key used to apply a speed boost (sprint).
-        /// </summary>
-        public Keys BoostKey
-        {
-            get => _boostKey;
-            set => _boostKey = value;
-        }
-
-        #endregion
-
-        #region Constructors
         #endregion
 
         #region Methods
@@ -162,52 +151,45 @@ namespace GDEngine.Core.Components.Controllers.Physics
                     "PhysicsWASDController: RigidBody is not Dynamic; movement may not behave as expected.");
         }
 
+
+        //attempt to lock rotation
+        private void LockRotation()
+        {
+            if (_rigidBody == null || Transform == null)
+                return;
+
+            //getting inverse quaternion to the current transform
+            Quaternion fixRot = Quaternion.Inverse(_obj.Transform.Rotation);
+            _obj.Transform.RotateToWorld(fixRot);
+        }
+
         protected override void Update(float deltaTime)
         {
             _keyboardState = Keyboard.GetState();
 
-            // Determine movement basis from camera (yaw) or our own Transform.
             GetMovementBasis(out var forward, out var right);
 
             Vector3 moveDir = Vector3.Zero;
+            if (_keyboardState.IsKeyDown(_forwardKey)) moveDir += forward;
+            if (_keyboardState.IsKeyDown(_backwardKey)) moveDir -= forward;
+            if (_keyboardState.IsKeyDown(_rightKey)) moveDir += right;
+            if (_keyboardState.IsKeyDown(_leftKey)) moveDir -= right;
 
-            if (_keyboardState.IsKeyDown(_forwardKey))
-                moveDir += forward;
-            if (_keyboardState.IsKeyDown(_backwardKey))
-                moveDir -= forward;
-            if (_keyboardState.IsKeyDown(_rightKey))
-                moveDir += right;
-            if (_keyboardState.IsKeyDown(_leftKey))
-                moveDir -= right;
+            if (moveDir.LengthSquared() > 0f) moveDir.Normalize();
 
-            float speed = _moveSpeed;
-            if (_keyboardState.IsKeyDown(_boostKey))
-                speed *= _boostMultiplier;
-
-            // Read current velocity so we preserve vertical motion (gravity/jumps).
             Vector3 velocity = _rigidBody.LinearVelocity;
+            Vector3 targetHorizontal = moveDir * _moveSpeed;
 
-            if (moveDir.LengthSquared() > 0f && speed > 0f)
-            {
-                moveDir.Normalize();
-
-                // Set horizontal velocity; keep Y as-is.
-                velocity.X = moveDir.X * speed;
-                velocity.Z = moveDir.Z * speed;
-            }
-            else
-            {
-                // No movement input: stop horizontal motion, let damping & gravity handle the rest.
-                velocity.X = 0f;
-                velocity.Z = 0f;
-            }
+            // Fix to stop it from freezing in place 
+            velocity.X = targetHorizontal.X;
+            velocity.Z = targetHorizontal.Z;
 
             _rigidBody.LinearVelocity = velocity;
+            _rigidBody.AngularVelocity = Vector3.Zero;
+            //lock rotation of object to prevent tipping over
+            LockRotation();
         }
 
-        #endregion
-
-        #region Housekeeping Methods
         #endregion
     }
 }

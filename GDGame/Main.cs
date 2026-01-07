@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Security.AccessControl;
 using GDEngine.Core;
 using GDEngine.Core.Audio;
@@ -101,7 +102,7 @@ namespace GDGame
             int scale = 150;
             InitializeSkyParent();
             InitializeSkyBox(scale);
-            //InitializeCollidableGround(scale);
+            InitializeCollidableGround(scale);
             //InitializePlayer();
             #endregion
 
@@ -128,7 +129,7 @@ namespace GDGame
 
             #region Insight items
             AddPolaroids();
-            DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
+            AddClothes();
             #endregion
 
             #region Loading GameObjects from JSON
@@ -256,23 +257,23 @@ namespace GDGame
             MeshRenderer meshRenderer = null;
 
             gameObject = new GameObject("ground");
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
-                 1,
-                 1,
-                 1,
-                 1,
-                 20,
-                 20);
+            //meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            //meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
+            //     1,
+            //     1,
+            //     1,
+            //     1,
+            //     20,
+            //     20);
 
             gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
             gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
             gameObject.Transform.TranslateTo(new Vector3(0, -0.5f, 0));
 
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlitGround;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
+            //gameObject.AddComponent(meshFilter);
+            //meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            //meshRenderer.Material = _matBasicUnlitGround;
+            //meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
 
             // Add a box collider matching the ground size
             var collider = gameObject.AddComponent<BoxCollider>();
@@ -717,24 +718,32 @@ namespace GDGame
             // PARENT: physics + movement (feet at y = 0 here)
             var parentGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON_PARENT);
             parentGO.Layer = LayerMask.IgnoreRaycast;
-            parentGO.Transform.TranslateTo(new Vector3(0f, 5f, 15f));
+            parentGO.Transform.TranslateTo(new Vector3(0f, 10f, 15f));
 
             // Capsule + rigidbody controller (kept upright internally)
-            var fpsController = parentGO.AddComponent<FirstPersonCapsuleController>();
-            fpsController.MoveSpeed = 8.0f;
-            fpsController.Acceleration = 50.0f;
-            fpsController.GroundFriction = 10.0f;
-            fpsController.JumpImpulse = 7.0f;
-            fpsController.CapsuleRadius = 0.5f;
-            fpsController.CapsuleHeight = 1.8f;
-            fpsController.GroundCheckDistance = 0.25f;
+            var rigidBody = parentGO.AddComponent<RigidBody>();
+            var collider = parentGO.AddComponent<BoxCollider>();
+            //collider.Height = 2f;
+            //collider.Radius = 1f;
+            collider.Size = new Vector3(1.5f, 1, 1.5f);
+            collider.Center = Vector3.Zero;
+            var fpsController = parentGO.AddComponent<PhysicsWASDController>();
+            fpsController.MoveSpeed = 5f;
+            fpsController.Obj = parentGO;
+            
+            //fpsController.Acceleration = 50.0f;
+            //fpsController.GroundFriction = 2.0f;
+            //fpsController.JumpImpulse = 0f;
+            //fpsController.CapsuleRadius = 2f;
+            //fpsController.CapsuleHeight = 4f;
+            //fpsController.GroundCheckDistance = 5f;
 
             // camera that can pitch + yaw without affecting the collider
             cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
             cameraGO.Transform.SetParent(parentGO.Transform);
 
             // Local offset from feet → eye height
-            cameraGO.Transform.TranslateTo(new Vector3(0, 0, 0));
+            cameraGO.Transform.TranslateTo(new Vector3(0, 4, 0));
             camera = cameraGO.AddComponent<Camera>();
             camera.FieldOfView = MathHelper.ToRadians(80.0f);
             var mouseLook = cameraGO.AddComponent<MouseYawPitchController>();
@@ -761,7 +770,8 @@ namespace GDGame
             #endregion
 
             //replace with new SetActiveCamera that searches by string
-            scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+            //scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+            scene.SetActiveCamera("simple camera");
         }
 
         private AnimationCurve3D BuildCameraPositionCurve(CurveLoopType curveLoopType)
@@ -1216,6 +1226,43 @@ namespace GDGame
 
         private void DemoImpulsePublish()
         {
+            GameObject go = _sceneManager.ActiveScene.Find(go => go.Name.Equals("sock2"));
+
+            bool isWPressed = _newKBState.IsKeyDown(Keys.W) && !_oldKBState.IsKeyDown(Keys.W);
+            bool isSPressed = _newKBState.IsKeyDown(Keys.S) && !_oldKBState.IsKeyDown(Keys.S);
+            bool isAPressed = _newKBState.IsKeyDown(Keys.A) && !_oldKBState.IsKeyDown(Keys.A);
+            bool isDPressed = _newKBState.IsKeyDown(Keys.D) && !_oldKBState.IsKeyDown(Keys.D);
+            bool isQPressed = _newKBState.IsKeyDown(Keys.Q) && !_oldKBState.IsKeyDown(Keys.Q);
+            bool isEPressed = _newKBState.IsKeyDown(Keys.E) && !_oldKBState.IsKeyDown(Keys.E);
+            bool isRPressed = _newKBState.IsKeyDown(Keys.R) && !_oldKBState.IsKeyDown(Keys.R);
+            bool isFPressed = _newKBState.IsKeyDown(Keys.F) && !_oldKBState.IsKeyDown(Keys.F);
+            bool isPPressed = _newKBState.IsKeyDown(Keys.P) && !_oldKBState.IsKeyDown(Keys.P);
+            ////this is to rotate object and move the object 
+            if (isWPressed || isSPressed)
+            {
+                go.Transform.TranslateBy(new Vector3((isWPressed == true ? 0.1f : -0.1f), 0, 0));
+            }
+            if (isAPressed || isDPressed)
+            {
+                go.Transform.TranslateBy(new Vector3(0, 0, (isAPressed == true ? 0.1f : -0.1f)));
+            }
+            if (isQPressed || isEPressed)
+            {
+                go.Transform.TranslateBy(new Vector3(0, (isQPressed == true ? 0.1f : -0.1f), 0));
+            }
+
+            if (isFPressed || isRPressed)
+            {
+                go.Transform.RotateEulerBy(new Vector3(0, 0, MathHelper.ToRadians(isFPressed == true ? 1 : -1f)));
+            }
+
+            if (isPPressed)
+            {
+                System.Diagnostics.Debug.WriteLine(go.Transform.LocalPosition.ToString());
+                System.Diagnostics.Debug.WriteLine(go.Transform.LocalRotation.ToString());
+            }
+
+
             //bool is7Pressed = _newKBState.IsKeyDown(Keys.D7) && !_oldKBState.IsKeyDown(Keys.D7);
             //if (is7Pressed)
             //{
@@ -1471,14 +1518,7 @@ namespace GDGame
 
         private void DemoLoadFromJSON()
         {
-            var relativeFilePathAndName = "assets/data/single_model_spawn.json";
-            List<ModelSpawnData> mList = JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName);
-
-            //load a single model
-            //foreach (var d in mList)
-            //    InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
-
-            relativeFilePathAndName = "assets/data/multi_model_spawn.json";
+            var relativeFilePathAndName = "assets/data/multi_model_spawn.json";
             //load multiple models
             foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName))
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
@@ -1516,9 +1556,10 @@ namespace GDGame
 
         private void AddPolaroids()
         {
-            List<Vector3> positions = [new Vector3(0, 0, 0), new Vector3(5, 5, 0), new Vector3(6, 6, 0), new Vector3(-2, -2, 0)];
+            List<Vector3> positions = [new Vector3(-16.3f, 1, 7.1f), new Vector3(-7f, 1.1f, 3.4f), new Vector3(-8.3f, 0.9f, 12.5f), new Vector3(-15.3f, 1.9f, 18.8f)];
+            List<Vector3> rotations = [new Vector3(MathHelper.ToRadians(-90), 0, 0.707f), new Vector3(MathHelper.ToRadians(-90), 0, 0.705f), new Vector3(MathHelper.ToRadians(-90), MathHelper.ToRadians(-45), 0.6797f), new Vector3(MathHelper.ToRadians(-90), MathHelper.ToRadians(135), 0.7018f)];
 
-            for(int i = 1; i <= positions.Count; i++)
+            for (int i = 1; i <= positions.Count; i++)
             {
                 var go = new GameObject("photo"+i);
 
@@ -1533,39 +1574,61 @@ namespace GDGame
                 imageRenderer.Overrides.Alpha = 1f;
 
                 go.Transform.ScaleTo(new Vector3(1, 1, 0.5f));
-                go.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
+                go.Transform.RotateEulerBy(rotations[i-1]);
                 go.Transform.TranslateTo(positions[i-1]);
 
+                var collider = go.AddComponent<BoxCollider>();
+                collider.Size = new Vector3(1, 1, 0.5f);
+                collider.Center = Vector3.Zero;
+
+                var rigidBody = go.AddComponent<RigidBody>();
+                rigidBody.BodyType = BodyType.Static;
+                go.IsStatic = true;
+
                 _sceneManager.ActiveScene.Add(go);
+                go.Enabled = false;
             }
-            
         }
 
-        private void DemoAlphaCutoutFoliage(Vector3 position, float width, float height)
+        private void AddClothes()
         {
-            var go = new GameObject("tree");
+            List<String> names = ["sock1", "sock2", "shirt", "pants"];
+            var groundLevel = -0.4f;
+            List<Vector3> positions = [new Vector3(-18.1f, groundLevel, 9f), new Vector3(-8.8f, groundLevel, 3.2f), new Vector3(-4.3f, groundLevel, 6.5f), new Vector3(-11.3f, groundLevel, 14.8f)];
+            List<Vector3> rotations = [new Vector3(MathHelper.ToRadians(-90), 0, 0.707f), new Vector3(MathHelper.ToRadians(-90), 0, 0.705f), new Vector3(MathHelper.ToRadians(-90), MathHelper.ToRadians(-45), 0.6797f), new Vector3(MathHelper.ToRadians(-90), MathHelper.ToRadians(135), 0.7018f)];
 
-            // A unit quad facing +Z (the factory already supplies lit quad with UVs)
-            var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
-            go.AddComponent(mf);
+            for (int i = 1; i <= positions.Count; i++)
+            {
+                var go = new GameObject(names[i-1]);
 
-            var treeRenderer = go.AddComponent<MeshRenderer>();
-            treeRenderer.Material = _matAlphaCutout;
+                var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
+                go.AddComponent(mf);
 
-            // Per-object properties via the overrides block
-            treeRenderer.Overrides.MainTexture = _textureDictionary.Get("tree4");
+                var imageRenderer = go.AddComponent<MeshRenderer>();
+                imageRenderer.Material = _matAlphaCutout;
+                imageRenderer.Overrides.MainTexture = _textureDictionary.Get(names[i-1]);
 
-            // AlphaTest: pixels with alpha below ReferenceAlpha are discarded (0–255).
-            // 128–160 is a good starting range for foliage; tweak to taste.
-            treeRenderer.Overrides.SetInt("ReferenceAlpha", 128);
-            treeRenderer.Overrides.Alpha = 1f; // overall alpha multiplier (kept at 1 for cutout)
+                imageRenderer.Overrides.SetInt("ReferenceAlpha", 128);
+                imageRenderer.Overrides.Alpha = 1f;
 
-            // Scale the quad so it looks like a tree (aspect from the PNG)
-            go.Transform.ScaleTo(new Vector3(width, height, 1f));
+                var scale = (go.Name.Equals("shirt") || go.Name.Equals("pants") ? 3 : 1);
 
-            go.Transform.TranslateTo(position);
+                go.Transform.ScaleTo(new Vector3(1* scale, 1 * scale, 0.5f));
+                go.Transform.RotateEulerBy(rotations[i - 1]);
+                go.Transform.TranslateTo(positions[i - 1]);
 
-            _sceneManager.ActiveScene.Add(go);
+                var collider = go.AddComponent<BoxCollider>();
+                collider.Size = new Vector3(1*scale, 1*scale, 0.5f);
+                collider.Center = Vector3.Zero;
+
+                var rigidBody = go.AddComponent<RigidBody>();
+                rigidBody.BodyType = BodyType.Static;
+                go.IsStatic = true;
+
+                _sceneManager.ActiveScene.Add(go);
+                //go.Enabled = false;
+            }
+
         }
 
         /// <summary>

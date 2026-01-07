@@ -36,6 +36,22 @@
             "contentPath": "assets/textures/items/photo4"
         },
         {
+            "name": "sock1",
+            "contentPath": "assets/textures/items/sock1"
+        },
+        {
+            "name": "sock2",
+            "contentPath": "assets/textures/items/sock2"
+        },
+        {
+            "name": "shirt",
+            "contentPath": "assets/textures/items/shirt"
+        },
+        {
+            "name": "pants",
+            "contentPath": "assets/textures/items/pants"
+        },
+        {
             "name": "map_colour",
             "contentPath": "assets/models/colourmap"
         },
