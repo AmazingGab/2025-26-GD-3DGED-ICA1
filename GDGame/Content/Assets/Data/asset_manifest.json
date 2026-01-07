@@ -20,8 +20,20 @@
   ],
     "textures": [
         {
-            "name": "ground_grass",
-            "contentPath": "assets/textures/foliage/ground/grass1"
+            "name": "photo1",
+            "contentPath": "assets/textures/items/photo1"
+        },
+        {
+            "name": "photo2",
+            "contentPath": "assets/textures/items/photo2"
+        },
+        {
+            "name": "photo3",
+            "contentPath": "assets/textures/items/photo3"
+        },
+        {
+            "name": "photo4",
+            "contentPath": "assets/textures/items/photo4"
         },
         {
             "name": "map_colour",

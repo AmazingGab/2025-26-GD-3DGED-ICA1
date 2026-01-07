@@ -5,23 +5,10 @@
     "asset": "Multi game object loaded from JSON"
   },
   "spawns": [
-
     {
-        "position": [
-            0,
-            -0.8,
-            0
-        ],
-        "rotationDegrees": [
-            0,
-            0,
-            0
-        ],
-        "scale": [
-            21,
-            6,
-            20
-        ],
+        "position": [ 0, -0.8, 0],
+        "rotationDegrees": [ 0, 0, 0],
+        "scale": [ 21, 6, 20],
         "textureName": "map_colour",
         "modelName": "room",
         "objectName": "map"

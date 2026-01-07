@@ -32,8 +32,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using SharpDX.Direct2D1.Effects;
-using SharpDX.DXGI;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
@@ -100,11 +98,11 @@ namespace GDGame
             InitializeCameras();
             InitializeCameraManagers();
 
-            int scale = 500;
+            int scale = 150;
             InitializeSkyParent();
             InitializeSkyBox(scale);
             //InitializeCollidableGround(scale);
-            InitializePlayer();
+            //InitializePlayer();
             #endregion
 
             #region Demos
@@ -128,7 +126,8 @@ namespace GDGame
 
             #endregion
 
-            #region Alpha effect
+            #region Insight items
+            AddPolaroids();
             DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             #endregion
 
@@ -1476,8 +1475,8 @@ namespace GDGame
             List<ModelSpawnData> mList = JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName);
 
             //load a single model
-            foreach (var d in mList)
-                InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
+            //foreach (var d in mList)
+            //    InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
 
             relativeFilePathAndName = "assets/data/multi_model_spawn.json";
             //load multiple models
@@ -1513,6 +1512,33 @@ namespace GDGame
             rb.BodyType = BodyType.Dynamic;
 
             _sceneManager.ActiveScene.Add(gameObject);
+        }
+
+        private void AddPolaroids()
+        {
+            List<Vector3> positions = [new Vector3(0, 0, 0), new Vector3(5, 5, 0), new Vector3(6, 6, 0), new Vector3(-2, -2, 0)];
+
+            for(int i = 1; i <= positions.Count; i++)
+            {
+                var go = new GameObject("photo"+i);
+
+                var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
+                go.AddComponent(mf);
+
+                var imageRenderer = go.AddComponent<MeshRenderer>();
+                imageRenderer.Material = _matAlphaCutout;
+                imageRenderer.Overrides.MainTexture = _textureDictionary.Get("photo"+i);
+
+                imageRenderer.Overrides.SetInt("ReferenceAlpha", 128);
+                imageRenderer.Overrides.Alpha = 1f;
+
+                go.Transform.ScaleTo(new Vector3(1, 1, 0.5f));
+                go.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
+                go.Transform.TranslateTo(positions[i-1]);
+
+                _sceneManager.ActiveScene.Add(go);
+            }
+            
         }
 
         private void DemoAlphaCutoutFoliage(Vector3 position, float width, float height)
