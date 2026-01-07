@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.AccessControl;
 using GDEngine.Core;
 using GDEngine.Core.Audio;
@@ -32,6 +33,7 @@ using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SharpDX.Direct2D1.Effects;
+using SharpDX.DXGI;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
@@ -101,7 +103,7 @@ namespace GDGame
             int scale = 500;
             InitializeSkyParent();
             InitializeSkyBox(scale);
-            InitializeCollidableGround(scale);
+            //InitializeCollidableGround(scale);
             InitializePlayer();
             #endregion
 
@@ -117,12 +119,13 @@ namespace GDGame
             InitializeCollisionEventListener();
 
             // Collidable game object demos
-            DemoCollidablePrimitive(new Vector3(0, 20, 5.1f), Vector3.One * 6, new Vector3(15, 45, 45));
-            DemoCollidablePrimitive(new Vector3(0, 10, 5.2f), Vector3.One * 1, new Vector3(45, 0, 0));
-            DemoCollidablePrimitive(new Vector3(0, 5, 5.3f), Vector3.One * 1, new Vector3(0, 0, 45));
-            DemoCollidableModel(new Vector3(0, 50, 10), Vector3.Zero, new Vector3(2, 1.25f, 2));
-            DemoCollidableModel(new Vector3(0, 40, 11), Vector3.Zero, new Vector3(2, 1.25f, 2));
-            DemoCollidableModel(new Vector3(0, 25, 12), Vector3.Zero, new Vector3(2, 1.25f, 2));
+            //DemoCollidablePrimitive(new Vector3(0, 20, 5.1f), Vector3.One * 6, new Vector3(15, 45, 45));
+            //DemoCollidablePrimitive(new Vector3(0, 10, 5.2f), Vector3.One * 1, new Vector3(45, 0, 0));
+            //DemoCollidablePrimitive(new Vector3(0, 5, 5.3f), Vector3.One * 1, new Vector3(0, 0, 45));
+            //DemoCollidableModel(new Vector3(0, 50, 10), Vector3.Zero, new Vector3(2, 1.25f, 2));
+            //DemoCollidableModel(new Vector3(0, 40, 11), Vector3.Zero, new Vector3(2, 1.25f, 2));
+            //DemoCollidableModel(new Vector3(0, 25, 12), Vector3.Zero, new Vector3(2, 1.25f, 2));
+
             #endregion
 
             #region Alpha effect
@@ -700,6 +703,16 @@ namespace GDGame
             scene.Add(cameraGO);
             #endregion
 
+            #region simple camera
+            cameraGO = new GameObject("simple camera");
+            camera = cameraGO.AddComponent<Camera>();
+            cameraGO.Transform.TranslateTo(new Vector3(0f, 4f, 0));
+
+            cameraGO.AddComponent<SimpleDriveController>();
+            cameraGO.AddComponent<MouseYawPitchController>();
+            scene.Add(cameraGO);
+            #endregion
+
             #region First-person capsule + camera (parent/child)
 
             // PARENT: physics + movement (feet at y = 0 here)
@@ -1204,6 +1217,57 @@ namespace GDGame
 
         private void DemoImpulsePublish()
         {
+            //bool is7Pressed = _newKBState.IsKeyDown(Keys.D7) && !_oldKBState.IsKeyDown(Keys.D7);
+            //if (is7Pressed)
+            //{
+            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
+            //    map.Transform.ScaleTo(map.Transform.LocalScale + new Vector3(1, 0, 0));
+            //    //map.Transform.ScaleTo(map.Transform.LocalScale. + 1f);
+            //}
+
+            //bool is8Pressed = _newKBState.IsKeyDown(Keys.D8) && !_oldKBState.IsKeyDown(Keys.D8);
+            //if (is8Pressed)
+            //{
+            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
+            //    map.Transform.ScaleTo(map.Transform.LocalScale - new Vector3(1, 0, 0));
+            //    //map.Transform.ScaleTo(map.Transform.LocalScale + 1f);
+            //}
+
+            //bool isIPressed = _newKBState.IsKeyDown(Keys.I) && !_oldKBState.IsKeyDown(Keys.I);
+            //if (isIPressed)
+            //{
+            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
+            //    map.Transform.ScaleTo(map.Transform.LocalScale + new Vector3(0, 1, 0));
+            //}
+
+            //bool isOPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
+            //if (isOPressed)
+            //{
+            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
+            //    map.Transform.ScaleTo(map.Transform.LocalScale - new Vector3(0, 1, 0));
+            //}
+
+            //bool isKPressed = _newKBState.IsKeyDown(Keys.K) && !_oldKBState.IsKeyDown(Keys.K);
+            //if (isKPressed)
+            //{
+            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
+            //    map.Transform.ScaleTo(map.Transform.LocalScale + new Vector3(0, 0, 1));
+            //}
+            //bool isLPressed = _newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L);
+            //if (isLPressed)
+            //{
+            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
+            //    map.Transform.ScaleTo(map.Transform.LocalScale - new Vector3(0, 0, 1));
+            //}
+
+            //bool isPPressed = _newKBState.IsKeyDown(Keys.P) && !_oldKBState.IsKeyDown(Keys.P);
+            //if (isPPressed)
+            //{
+            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
+            //    System.Diagnostics.Debug.WriteLine(map.Transform.LocalScale.ToString()); 
+            //}
+
+
             var impulses = EngineContext.Instance.Impulses;
 
             // a simple explosion reaction
@@ -1266,26 +1330,26 @@ namespace GDGame
         {
             var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>().Orchestrator;
 
-            bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
-            if (isPressed)
-            {
-                orchestrator.Build("my first sequence")
-                    .WaitSeconds(2)
-                    .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))
-                    .WaitSeconds(2)
-                    .Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1, false, null))
-                    .Register();
+            //bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
+            //if (isPressed)
+            //{
+            //    orchestrator.Build("my first sequence")
+            //        .WaitSeconds(2)
+            //        .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))
+            //        .WaitSeconds(2)
+            //        .Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1, false, null))
+            //        .Register();
 
-                orchestrator.Start("my first sequence", _sceneManager.ActiveScene, EngineContext.Instance);
-            }
+            //    orchestrator.Start("my first sequence", _sceneManager.ActiveScene, EngineContext.Instance);
+            //}
 
-            bool isIPressed = _newKBState.IsKeyDown(Keys.I) && !_oldKBState.IsKeyDown(Keys.I);
-            if (isIPressed)
-                orchestrator.Pause("my first sequence");
+            //bool isIPressed = _newKBState.IsKeyDown(Keys.I) && !_oldKBState.IsKeyDown(Keys.I);
+            //if (isIPressed)
+            //    orchestrator.Pause("my first sequence");
 
-            bool isPPressed = _newKBState.IsKeyDown(Keys.P) && !_oldKBState.IsKeyDown(Keys.P);
-            if (isPPressed)
-                orchestrator.Resume("my first sequence");
+            //bool isPPressed = _newKBState.IsKeyDown(Keys.P) && !_oldKBState.IsKeyDown(Keys.P);
+            //if (isPPressed)
+            //    orchestrator.Resume("my first sequence");
         }
 
         private void DemoAudioSystem()
@@ -1357,6 +1421,14 @@ namespace GDGame
                 events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",
                 1, false, null));
             }
+
+            bool simple = _newKBState.IsKeyDown(Keys.D3) && !_oldKBState.IsKeyDown(Keys.D3);
+            if (simple)
+            {
+                events.Post(new CameraEvent("simple camera"));
+                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",
+                1, false, null));
+            }
         }
 
         private void DemoEventPublish()
@@ -1383,13 +1455,13 @@ namespace GDGame
                 EngineContext.Instance.Events.Publish(inventoryEvent);
             }
 
-            if (_newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L))
-            {
-                var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
-                inventoryEvent.ItemType = ItemType.Lore;
-                inventoryEvent.Value = 0;
-                EngineContext.Instance.Events.Publish(inventoryEvent);
-            }
+            //if (_newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L))
+            //{
+            //    var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
+            //    inventoryEvent.ItemType = ItemType.Lore;
+            //    inventoryEvent.Value = 0;
+            //    EngineContext.Instance.Events.Publish(inventoryEvent);
+            //}
 
             if (_newKBState.IsKeyDown(Keys.M) && !_oldKBState.IsKeyDown(Keys.M))
             {

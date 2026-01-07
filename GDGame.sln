@@ -13,8 +13,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		cover.runsettings.xml = cover.runsettings.xml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GDEngineTests", "GDEngineTests\GDEngineTests.csproj", "{7A0A7889-7DC2-4CA7-B747-0C7DCD830F67}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,10 +27,6 @@ Global
 		{F6643AD7-8DF0-47F1-B365-44F0C6983E1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F6643AD7-8DF0-47F1-B365-44F0C6983E1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F6643AD7-8DF0-47F1-B365-44F0C6983E1A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7A0A7889-7DC2-4CA7-B747-0C7DCD830F67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7A0A7889-7DC2-4CA7-B747-0C7DCD830F67}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7A0A7889-7DC2-4CA7-B747-0C7DCD830F67}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7A0A7889-7DC2-4CA7-B747-0C7DCD830F67}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
