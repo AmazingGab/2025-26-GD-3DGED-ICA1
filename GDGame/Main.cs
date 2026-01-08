@@ -51,11 +51,13 @@ namespace GDGame
         private PBRMaterial _matPBR;
         #endregion
 
-        #region Demo Fields (remove in the game)
+        #region Game Fileds
         private AnimationCurve3D _animationPositionCurve, _animationRotationCurve;
         private AnimationCurve _animationCurve;
         private KeyboardState _newKBState, _oldKBState;
         private int _damageAmount;
+        private int _insight = 0;
+
 
         // Simple debug subscription for collision events
         private IDisposable _collisionSubscription;
@@ -66,6 +68,10 @@ namespace GDGame
         private float _currentHealth = 100;
         private MenuManager _menuManager;
         private UIDebugInfo _debugRenderer;
+        private MouseState _newMouseState;
+        private MouseState _oldMouseState;
+        private GameObject _dialogueGO;
+        private UIText _textDialogue;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -130,6 +136,7 @@ namespace GDGame
             #region Insight items
             AddPolaroids();
             AddClothes();
+            AddNote();
             #endregion
 
             #region Loading GameObjects from JSON
@@ -163,6 +170,8 @@ namespace GDGame
             // Set the active scene
             _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
 
+            //todelet
+            NewDialogue();
             base.Initialize();
         }
 
@@ -941,7 +950,7 @@ namespace GDGame
 
             var picker = uiReticleGO.AddComponent<UIPickerInfo>();
             picker.HitMask = LayerMask.All;
-            picker.MaxDistance = 500f;
+            picker.MaxDistance = 5f;
             picker.HitTriggers = false;
 
             // Optional custom formatting
@@ -950,6 +959,14 @@ namespace GDGame
                 var go = hit.Body?.GameObject;
                 if (go == null)
                     return string.Empty;
+                if (go.Name.Contains("photo"))
+                {
+                    _newMouseState = Mouse.GetState();
+                    ClickedPhoto(go);
+
+                    _oldMouseState = _newMouseState;
+                    return "A polaroid picture";
+                }
 
                 return $"{go.Name}  d={hit.Distance:F1}";
             };
@@ -958,6 +975,50 @@ namespace GDGame
 
             // Hide mouse since reticle will take its place
             IsMouseVisible = false;
+        }
+
+        private void NewDialogue()
+        {
+            _dialogueGO = new GameObject("dialogue");
+            _textDialogue = _dialogueGO.AddComponent<UIText>();
+            _textDialogue.Font = _fontDictionary.Get("menufont");
+            _textDialogue.FallbackColor = new Color(72, 59, 32);
+            _textDialogue.PositionProvider = () => new Vector2(_graphics.PreferredBackBufferWidth/2 - 200, _graphics.PreferredBackBufferHeight-100);
+            _textDialogue.TextProvider = () => "blank";
+
+            _sceneManager.ActiveScene.Add(_dialogueGO);
+        }
+
+        private void ClickedPhoto(GameObject go)
+        {
+            if (_newMouseState.LeftButton == ButtonState.Pressed && _oldMouseState.LeftButton == ButtonState.Released)
+            {
+                if (go.Name.Equals("photo1"))
+                {
+                    _textDialogue.TextProvider = () => "Wow a very cool picture";
+                    go.Enabled = false;
+                }
+                else if (go.Name.Equals("photo2"))
+                {
+                    _textDialogue.TextProvider = () => "Wow I look pretty rough here";
+                    go.Enabled = false;
+                }
+                else if (go.Name.Equals("photo3"))
+                {
+                    _textDialogue.TextProvider = () => "Who.. is that behind me";
+                    go.Enabled = false;
+                }
+                else if (go.Name.Equals("photo4"))
+                {
+                    _textDialogue.TextProvider = () => "Were they following me?";
+                    go.Enabled = false;
+                }
+                else
+                {
+                    _textDialogue.TextProvider = () => "";
+                }
+
+            }
         }
 
         /// <summary>
@@ -998,6 +1059,7 @@ namespace GDGame
 
             #region Demo
             DemoStuff();
+            
             #endregion
 
             base.Update(gameTime);
@@ -1217,6 +1279,7 @@ namespace GDGame
             DemoAudioSystem();
             DemoOrchestrationSystem();
             DemoImpulsePublish();
+            //ObjectEditor("sock1");
             //a demo relating to GameStateSystem
             _currentHealth--;
 
@@ -1224,9 +1287,9 @@ namespace GDGame
             _oldKBState = _newKBState;
         }
 
-        private void DemoImpulsePublish()
+        private void ObjectEditor(String item)
         {
-            GameObject go = _sceneManager.ActiveScene.Find(go => go.Name.Equals("sock2"));
+            GameObject go = _sceneManager.ActiveScene.Find(go => go.Name.Equals(item));
 
             bool isWPressed = _newKBState.IsKeyDown(Keys.W) && !_oldKBState.IsKeyDown(Keys.W);
             bool isSPressed = _newKBState.IsKeyDown(Keys.S) && !_oldKBState.IsKeyDown(Keys.S);
@@ -1261,59 +1324,10 @@ namespace GDGame
                 System.Diagnostics.Debug.WriteLine(go.Transform.LocalPosition.ToString());
                 System.Diagnostics.Debug.WriteLine(go.Transform.LocalRotation.ToString());
             }
+        }
 
-
-            //bool is7Pressed = _newKBState.IsKeyDown(Keys.D7) && !_oldKBState.IsKeyDown(Keys.D7);
-            //if (is7Pressed)
-            //{
-            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
-            //    map.Transform.ScaleTo(map.Transform.LocalScale + new Vector3(1, 0, 0));
-            //    //map.Transform.ScaleTo(map.Transform.LocalScale. + 1f);
-            //}
-
-            //bool is8Pressed = _newKBState.IsKeyDown(Keys.D8) && !_oldKBState.IsKeyDown(Keys.D8);
-            //if (is8Pressed)
-            //{
-            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
-            //    map.Transform.ScaleTo(map.Transform.LocalScale - new Vector3(1, 0, 0));
-            //    //map.Transform.ScaleTo(map.Transform.LocalScale + 1f);
-            //}
-
-            //bool isIPressed = _newKBState.IsKeyDown(Keys.I) && !_oldKBState.IsKeyDown(Keys.I);
-            //if (isIPressed)
-            //{
-            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
-            //    map.Transform.ScaleTo(map.Transform.LocalScale + new Vector3(0, 1, 0));
-            //}
-
-            //bool isOPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
-            //if (isOPressed)
-            //{
-            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
-            //    map.Transform.ScaleTo(map.Transform.LocalScale - new Vector3(0, 1, 0));
-            //}
-
-            //bool isKPressed = _newKBState.IsKeyDown(Keys.K) && !_oldKBState.IsKeyDown(Keys.K);
-            //if (isKPressed)
-            //{
-            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
-            //    map.Transform.ScaleTo(map.Transform.LocalScale + new Vector3(0, 0, 1));
-            //}
-            //bool isLPressed = _newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L);
-            //if (isLPressed)
-            //{
-            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
-            //    map.Transform.ScaleTo(map.Transform.LocalScale - new Vector3(0, 0, 1));
-            //}
-
-            //bool isPPressed = _newKBState.IsKeyDown(Keys.P) && !_oldKBState.IsKeyDown(Keys.P);
-            //if (isPPressed)
-            //{
-            //    GameObject map = _sceneManager.ActiveScene.Find(go => go.Name.Equals("map"));
-            //    System.Diagnostics.Debug.WriteLine(map.Transform.LocalScale.ToString()); 
-            //}
-
-
+        private void DemoImpulsePublish()
+        {
             var impulses = EngineContext.Instance.Impulses;
 
             // a simple explosion reaction
@@ -1586,7 +1600,7 @@ namespace GDGame
                 go.IsStatic = true;
 
                 _sceneManager.ActiveScene.Add(go);
-                go.Enabled = false;
+                //go.Enabled = false;
             }
         }
 
@@ -1629,6 +1643,38 @@ namespace GDGame
                 //go.Enabled = false;
             }
 
+        }
+
+        private void AddNote()
+        {
+            var go = new GameObject("note");
+
+            var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
+            go.AddComponent(mf);
+
+            var imageRenderer = go.AddComponent<MeshRenderer>();
+            imageRenderer.Material = _matAlphaCutout;
+            imageRenderer.Overrides.MainTexture = _textureDictionary.Get("note");
+
+            imageRenderer.Overrides.SetInt("ReferenceAlpha", 128);
+            imageRenderer.Overrides.Alpha = 1f;
+
+            var scale = (go.Name.Equals("shirt") || go.Name.Equals("pants") ? 3 : 1);
+
+            go.Transform.ScaleTo(new Vector3(1 * scale, 1 * scale, 0.5f));
+            go.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), MathHelper.ToRadians(-70), MathHelper.ToRadians(-30)));
+            go.Transform.TranslateTo(new Vector3(-1.1f, 1.1f, 5.2f));
+
+            var collider = go.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(1 * scale, 1 * scale, 0.5f);
+            collider.Center = Vector3.Zero;
+
+            var rigidBody = go.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
+            go.IsStatic = true;
+
+            _sceneManager.ActiveScene.Add(go);
+            //go.Enabled = false;
         }
 
         /// <summary>

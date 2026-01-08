@@ -52,6 +52,10 @@
             "contentPath": "assets/textures/items/pants"
         },
         {
+            "name": "note",
+            "contentPath": "assets/textures/items/note"
+        },
+        {
             "name": "map_colour",
             "contentPath": "assets/models/colourmap"
         },
