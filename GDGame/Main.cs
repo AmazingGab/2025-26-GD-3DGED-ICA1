@@ -57,6 +57,7 @@ namespace GDGame
         private KeyboardState _newKBState, _oldKBState;
         private int _damageAmount;
         private int _insight = 0;
+        private List<GameObject> insightItems = [];
 
 
         // Simple debug subscription for collision events
@@ -70,8 +71,10 @@ namespace GDGame
         private UIDebugInfo _debugRenderer;
         private MouseState _newMouseState;
         private MouseState _oldMouseState;
+
         private GameObject _dialogueGO;
         private UIText _textDialogue;
+       
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -134,9 +137,10 @@ namespace GDGame
             #endregion
 
             #region Insight items
-            AddPolaroids();
-            AddClothes();
             AddNote();
+            AddClothes();
+            AddPolaroids();
+            
             #endregion
 
             #region Loading GameObjects from JSON
@@ -929,7 +933,7 @@ namespace GDGame
         {
             var uiReticleGO = new GameObject("HUD");
 
-            var reticleAtlas = _textureDictionary.Get("Crosshair_21");
+            var reticleAtlas = _textureDictionary.Get("crosshair");
             var uiFont = _fontDictionary.Get("mouse_reticle_font");
 
             // Reticle (cursor): always on top
@@ -937,7 +941,7 @@ namespace GDGame
             reticle.Origin = reticleAtlas.GetCenter();
             reticle.SourceRectangle = null;
             reticle.Scale = new Vector2(0.1f, 0.1f);
-            reticle.RotationSpeedDegPerSec = 55;
+            reticle.RotationSpeedDegPerSec = 0;
             reticle.LayerDepth = UILayer.Cursor;
             uiReticleGO.AddComponent(reticle);
 
@@ -962,13 +966,30 @@ namespace GDGame
                 if (go.Name.Contains("photo"))
                 {
                     _newMouseState = Mouse.GetState();
-                    ClickedPhoto(go);
+                    ClickedItem(go);
 
                     _oldMouseState = _newMouseState;
                     return "A polaroid picture";
                 }
+                if (go.Name.Contains("sock") || go.Name.Equals("shirt") || go.Name.Equals("pants"))
+                {
+                    _newMouseState = Mouse.GetState();
+                    ClickedItem(go);
 
-                return $"{go.Name}  d={hit.Distance:F1}";
+                    _oldMouseState = _newMouseState;
+
+                    return "My clothes piece";
+                }
+                if (go.Name.Equals("note")) {
+                    _newMouseState = Mouse.GetState();
+                    ClickedItem(go);
+
+                    _oldMouseState = _newMouseState;
+
+                    return "My drunk note";
+                }
+
+                return "";
             };
 
             _sceneManager.ActiveScene.Add(uiReticleGO);
@@ -984,34 +1005,80 @@ namespace GDGame
             _textDialogue.Font = _fontDictionary.Get("menufont");
             _textDialogue.FallbackColor = new Color(72, 59, 32);
             _textDialogue.PositionProvider = () => new Vector2(_graphics.PreferredBackBufferWidth/2 - 200, _graphics.PreferredBackBufferHeight-100);
-            _textDialogue.TextProvider = () => "blank";
+            _textDialogue.TextProvider = () => "";
 
             _sceneManager.ActiveScene.Add(_dialogueGO);
         }
 
-        private void ClickedPhoto(GameObject go)
+        private void ClickedItem(GameObject go)
         {
             if (_newMouseState.LeftButton == ButtonState.Pressed && _oldMouseState.LeftButton == ButtonState.Released)
             {
-                if (go.Name.Equals("photo1"))
+                if (go.Name.Equals("note"))
+                {
+                    _textDialogue.TextProvider = () => "Wow what a weird note";
+                    go.Enabled = false;
+                    for (int i = 1; i < 5; i++)
+                    {
+                        insightItems[i].Enabled = true;
+                    }
+                    _insight += 5;
+                }
+                else if (go.Name.Equals("sock1"))
+                {
+                    _textDialogue.TextProvider = () => "My precious sock";
+                    go.Enabled = false;
+                    _insight++;
+                    insightItems[_insight - 1].Enabled = true;
+                }
+                else if (go.Name.Equals("sock2"))
+                {
+                    _textDialogue.TextProvider = () => "My less precious sock";
+                    go.Enabled = false;
+                    _insight++;
+                    insightItems[_insight - 1].Enabled = true;
+                }
+                else if (go.Name.Equals("shirt"))
+                {
+                    _textDialogue.TextProvider = () => "My green shirt still looks wearable";
+                    go.Enabled = false;
+                    _insight++;
+                    insightItems[_insight - 1].Enabled = true;
+                }
+                else if (go.Name.Equals("pants"))
+                {
+                    _textDialogue.TextProvider = () => "My blue jeans with a new tear";
+                    go.Enabled = false;
+                    _insight++;
+                    insightItems[_insight - 1].Enabled = true;
+                }
+                else if (go.Name.Equals("photo1"))
                 {
                     _textDialogue.TextProvider = () => "Wow a very cool picture";
                     go.Enabled = false;
+                    //_insight++;
+
                 }
                 else if (go.Name.Equals("photo2"))
                 {
                     _textDialogue.TextProvider = () => "Wow I look pretty rough here";
                     go.Enabled = false;
+                    //_insight++;
+
                 }
                 else if (go.Name.Equals("photo3"))
                 {
                     _textDialogue.TextProvider = () => "Who.. is that behind me";
                     go.Enabled = false;
+                    //_insight++;
+
                 }
                 else if (go.Name.Equals("photo4"))
                 {
                     _textDialogue.TextProvider = () => "Were they following me?";
                     go.Enabled = false;
+                    //_insight++;
+
                 }
                 else
                 {
@@ -1279,8 +1346,10 @@ namespace GDGame
             DemoAudioSystem();
             DemoOrchestrationSystem();
             DemoImpulsePublish();
+            //To allow object editing in scene
             //ObjectEditor("sock1");
-            //a demo relating to GameStateSystem
+
+
             _currentHealth--;
 
             // Store old state (allows us to do was pressed type checks)
@@ -1600,7 +1669,8 @@ namespace GDGame
                 go.IsStatic = true;
 
                 _sceneManager.ActiveScene.Add(go);
-                //go.Enabled = false;
+                go.Enabled = false;
+                insightItems.Add(go);
             }
         }
 
@@ -1640,7 +1710,8 @@ namespace GDGame
                 go.IsStatic = true;
 
                 _sceneManager.ActiveScene.Add(go);
-                //go.Enabled = false;
+                go.Enabled = false;
+                insightItems.Add(go);
             }
 
         }
@@ -1675,6 +1746,7 @@ namespace GDGame
 
             _sceneManager.ActiveScene.Add(go);
             //go.Enabled = false;
+            insightItems.Add(go);
         }
 
         /// <summary>
