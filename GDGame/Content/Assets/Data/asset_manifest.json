@@ -142,64 +142,64 @@
     ],
   "models": [
     {
-      "name": "monkey1",
-      "contentPath": "assets/models/monkey1"
-    },
-    {
-      "name": "cube",
-      "contentPath": "assets/models/cube"
-    },
-    {
-      "name": "teapot",
-      "contentPath": "assets/models/teapot"
-    },
-    {
-      "name": "teapot_lowpoly",
-      "contentPath": "assets/models/teapot_lowpoly"
-    },
-    {
-        "name": "plane",
-        "contentPath": "assets/models/plane"
+      "name": "door",
+      "contentPath": "assets/models/door"
     },
     {
         "name": "room",
         "contentPath": "assets/models/room"
     }
   ],
-  "sounds": [
-    {
-      "name": "explosion1",
-      "contentPath": "assets/sounds/Explosion 1"
-    },
-    {
-      "name": "hand_gun1",
-      "contentPath": "assets/sounds/Hand Gun 1"
-    },
-    {
-      "name": "laser_gun_salve",
-      "contentPath": "assets/sounds/Laser Gun Salve"
-    },
-    {
-      "name": "secret_door",
-      "contentPath": "assets/sounds/Secret door"
-    },
-    {
-      "name": "SFX_UI_Click_Designed_Pop_Generic_1",
-      "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Generic_1"
-    },
-    {
-      "name": "SFX_UI_Click_Designed_Pop_Mallet_Open_1",
-      "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Mallet_Open_1"
-    },
-    {
-      "name": "SFX_UI_Click_Designed_Pop_Movement_Open_1",
-      "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Movement_Open_1"
-    },
-    {
-      "name": "SFX_UI_Click_Designed_Pop_Negative_Close_1",
-      "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Negative_Close_1"
-    }
-  ],
+    "sounds": [
+        {
+            "name": "headache",
+            "contentPath": "assets/sounds/headache"
+        },
+        {
+            "name": "calm music",
+            "contentPath": "assets/sounds/calmmusic"
+        },
+        {
+            "name": "confused music",
+            "contentPath": "assets/sounds/confusedmusic"
+        },
+        {
+            "name": "cars honk",
+            "contentPath": "assets/sounds/carshonking"
+        },
+        {
+            "name": "birds",
+            "contentPath": "assets/sounds/birds"
+        },
+        {
+            "name": "door knock",
+            "contentPath": "assets/sounds/doorknocking"
+        },
+        {
+            "name": "examine",
+            "contentPath": "assets/sounds/examine"
+        },
+        {
+            "name": "collect",
+            "contentPath": "assets/sounds/collect"
+        },
+        {
+            "name": "SFX_UI_Click_Designed_Pop_Generic_1",
+            "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Generic_1"
+        },
+        {
+            "name": "SFX_UI_Click_Designed_Pop_Mallet_Open_1",
+            "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Mallet_Open_1"
+        },
+        {
+            "name": "SFX_UI_Click_Designed_Pop_Movement_Open_1",
+            "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Movement_Open_1"
+        },
+        {
+            "name": "SFX_UI_Click_Designed_Pop_Negative_Close_1",
+            "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Negative_Close_1"
+        }
+    ],
   "effects": [
     {
       "name": "ui_test_effect",
