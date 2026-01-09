@@ -36,6 +36,8 @@ using Microsoft.Xna.Framework.Input;
 using SharpDX.Direct2D1.Effects;
 using Color = Microsoft.Xna.Framework.Color;
 
+
+
 namespace GDGame
 {
     public class Main : Game
@@ -75,7 +77,7 @@ namespace GDGame
 
         private GameObject _dialogueGO;
         private UIText _textDialogue;
-        private float _musicVolume = 0.01f;
+        private float _musicVolume = 0.1f;
         private string _currentMusic = "confused music";
         private float _sfxVolume = 0.7f;
         private bool _isExamining = false;
@@ -83,6 +85,9 @@ namespace GDGame
         private Vector3 _oldExaminePos;
         private Quaternion _oldExamineRot;
         private GameObject _uiReticleGO;
+        private bool _hasKey;
+        private bool _hasHammer;
+        private int _unlockValue;
 
         #endregion
 
@@ -149,6 +154,7 @@ namespace GDGame
             AddNote();
             AddClothes();
             AddPolaroids();
+            spawnModels();
             
             #endregion
 
@@ -184,12 +190,10 @@ namespace GDGame
             _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
 
             LoadEmitters();
+            CreatDialogue();
+            IntroOrchestrationSystem();
 
-            //todelet
-            NewDialogue();
-            var events = EngineContext.Instance.Events;
-            events.Publish(new PlayMusicEvent("confused music", _musicVolume, 8));
-            events.Publish(new PlaySfxEvent("door knock", 1, false, null));
+            _sceneManager.Paused = true;
             base.Initialize();
         }
 
@@ -270,6 +274,8 @@ namespace GDGame
             {
                 _sceneManager.Paused = false;
                 _menuManager.HideMenus();
+                var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>()?.Orchestrator;
+                orchestrator.Start("intro", _sceneManager.ActiveScene, EngineContext.Instance);
             };
 
             _menuManager.ExitRequested += () =>
@@ -493,7 +499,7 @@ namespace GDGame
         private void InitializeSystems()
         {
             InitializePhysicsSystem();
-            InitializePhysicsDebugSystem(false);
+            InitializePhysicsDebugSystem(true);
             InitializeEventSystem();  //propagate events  
             InitializeInputSystem();  //input
             InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
@@ -972,6 +978,39 @@ namespace GDGame
                     ClickedItem(go);
                     _oldMouseState = _newMouseState;
                 }
+                if (go.Name.Equals("lock"))
+                {
+                    ClickedItem(go);
+                    _oldMouseState = _newMouseState;
+                    if (_hasKey)
+                        return "Lock\n--\nLeft Click to Unlock";
+                    else
+                        return "Lock\n--\nNeed a key to Unlock";
+                }
+                if (go.Name.Equals("plank"))
+                {
+                    if (_hasHammer)
+                    {
+                        ClickedItem(go);
+                        _oldMouseState = _newMouseState;
+                        return "Lock\n--\nLeft Click to Take Off";
+                    }
+                    else
+                        return "Lock\n--\nNeed a hammer to Take Off";
+                }
+
+                if (go.Name.Equals("key"))
+                {
+                    ClickedItem(go);
+                    _oldMouseState = _newMouseState;
+                    return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
+                }
+                if (go.Name.Equals("hammer"))
+                {
+                    ClickedItem(go);
+                    _oldMouseState = _newMouseState;
+                    return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
+                }
 
                 _oldMouseState = _newMouseState;
                 return "";
@@ -994,16 +1033,56 @@ namespace GDGame
                 ui.Enabled = state;
         }
 
-        private void NewDialogue()
+        private void dialogueVisible(string text)
         {
+            _textDialogue.TextProvider = () => text;
+            if (text.Length < 1)
+            {
+                foreach (var renderable in _dialogueGO.GetComponents<UIRenderer>())
+                {
+                    renderable.Enabled = false;
+                }
+            }
+            else             
+            {
+                foreach (var renderable in _dialogueGO.GetComponents<UIRenderer>())
+                {
+                    renderable.Enabled = true;
+                }
+            }
+        }
+
+        private void CreatDialogue()
+        {
+            int backBufferWidth = _graphics.PreferredBackBufferWidth;
+            int backBufferHeight = _graphics.PreferredBackBufferHeight;
+            Vector2 viewportSize = new Vector2(backBufferWidth, backBufferHeight);
+
             _dialogueGO = new GameObject("dialogue");
+            var texture = _dialogueGO.AddComponent<UITexture>();
+            texture.Texture = _textureDictionary.Get("dialogue");
+            texture.Size = viewportSize;        // cover screen
+            texture.Position = Vector2.Zero;
+
             _textDialogue = _dialogueGO.AddComponent<UIText>();
             _textDialogue.Font = _fontDictionary.Get("menufont");
-            _textDialogue.FallbackColor = new Color(72, 59, 32);
-            _textDialogue.PositionProvider = () => new Vector2(_graphics.PreferredBackBufferWidth/2 - 200, _graphics.PreferredBackBufferHeight-100);
+            _textDialogue.FallbackColor = new Color(255, 255, 255);
+            _textDialogue.PositionProvider = () => new Vector2(30, _graphics.PreferredBackBufferHeight-110);
             _textDialogue.TextProvider = () => "";
 
+            _textDialogue.LayerDepth = UILayer.MenuBack;
             _sceneManager.ActiveScene.Add(_dialogueGO);
+            dialogueVisible("");
+        }
+
+        private void openDoor()
+        {
+            dialogueVisible("The End. Thanks for playing! Make sure to drink responsibility \nas you could end up in scarier situations!");
+            var door = _sceneManager.ActiveScene.Find(g => g.Name.Equals("door"));
+            door.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(10), 0));
+            door.Transform.TranslateBy(new Vector3(0, 0, 0.2f));
+            //wait
+            //end screen
         }
 
         private void ClickedItem(GameObject go)
@@ -1028,120 +1107,176 @@ namespace GDGame
                     if (go.Name.Contains("photo") || go.Name.Contains("sock") || go.Name.Equals("pants") || go.Name.Equals("shirt") || go.Name.Equals("note"))
                     {
                         events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
-                        if (!go.Name.Contains("photo"))
-                        {
-                            _insight++;
+                        _insight++;
+                        if (_insight < 10)
                             insightItems[_insight - 1].Enabled = true;
+
+                        if (_insight > 12)
+                        {
+                            var key = _sceneManager.ActiveScene.Find(g => g.Name.Equals("key"));
+                            key.Enabled = true;
+                            var hammer = _sceneManager.ActiveScene.Find(g => g.Name.Equals("hammer"));
+                            hammer.Enabled = true;
                         }
-                            
+
                         go.Enabled = false;
                         go.Name = "collected";
                         //cant destroy
                         //go.Destroy();
                     }
+
+                    if (go.Name.Equals("key"))
+                    {
+                        events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
+                        _hasKey = true;
+                        go.Destroy();
+                    }
+                    if (go.Name.Equals("hammer"))
+                    {
+                        events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
+                        _hasHammer = true;
+                        go.Destroy();
+                    }
+
+
+                    if (go.Name.Equals("plank") && _hasHammer)
+                    {
+                        _unlockValue += 1;
+                        events.Publish(new PlaySfxEvent("plank", _sfxVolume, false));
+                        go.Destroy();
+
+                        if (_unlockValue >= 3)
+                        {
+                           openDoor();
+                        }
+                    }
+
+                    if (go.Name.Equals("lock") && _hasKey)
+                    {
+                        _unlockValue += 1;
+                        events.Publish(new PlaySfxEvent("keys", _sfxVolume, false));
+                        go.Destroy();
+                        if (_unlockValue >= 3)
+                        {
+                            openDoor();
+                        }
+                    }
                 }
             }
-
-            if(_newMouseState.RightButton == ButtonState.Pressed && _oldMouseState.RightButton == ButtonState.Released)
+            if (_newMouseState.RightButton == ButtonState.Pressed && _oldMouseState.RightButton == ButtonState.Released)
             {
-                
+
                 var plr = _sceneManager.ActiveScene.Find(go => go.Name.Equals("simple camera"));
                 var look = plr.GetComponent<MouseYawPitchController>();
                 var move = plr.GetComponent<SimpleDriveController>();
-                if (!_isExamining)
+                if (!_isExamining) 
                 {
-                    _isExamining = true;
-                    
-                    look.Enabled = false;
-                    move.Enabled = false;
+                    if (!go.Name.Equals("plank") && !go.Name.Equals("lock"))
+                    {
+                        _isExamining = true;
 
-                    if (go.Name.Equals("note"))
-                    {
-                        _textDialogue.TextProvider = () => "Wow what a weird note";
-                    }
-                    else if (go.Name.Equals("sock1"))
-                    {
-                        _textDialogue.TextProvider = () => "My precious sock";
-                    }
-                    else if (go.Name.Equals("sock2"))
-                    {
-                        _textDialogue.TextProvider = () => "My less precious sock";
-                    }
-                    else if (go.Name.Equals("shirt"))
-                    {
-                        _textDialogue.TextProvider = () => "My green shirt still looks wearable";
-                    }
-                    else if (go.Name.Equals("pants"))
-                    {
-                        _textDialogue.TextProvider = () => "My blue jeans with a new tear";
-                    }
-                    else if (go.Name.Equals("photo1"))
-                    {
-                        _textDialogue.TextProvider = () => "Wow a very cool picture";
-                    }
-                    else if (go.Name.Equals("photo2"))
-                    {
-                        _textDialogue.TextProvider = () => "Wow I look pretty rough here";
-                    }
-                    else if (go.Name.Equals("photo3"))
-                    {
-                        _textDialogue.TextProvider = () => "Who.. is that behind me";
-                    }
-                    else if (go.Name.Equals("photo4"))
-                    {
-                        _textDialogue.TextProvider = () => "Were they following me?";
-                    }
+                        look.Enabled = false;
+                        move.Enabled = false;
 
-                    if (go.Name.Contains("photo") || go.Name.Contains("sock") || go.Name.Equals("pants") || go.Name.Equals("shirt") || go.Name.Equals("note"))
-                    {
-                        events.Publish(new PlaySfxEvent("examine", _sfxVolume, false));
-
-                        _oldExamineName = go.Name;
-                        _oldExaminePos = go.Transform.Position;
-                        _oldExamineRot = go.Transform.Rotation;
-
-                        
-                        if (go.Name.Equals("pants") || go.Name.Equals("shirt"))
+                        if (go.Name.Equals("note"))
                         {
-                            go.Transform.ScaleBy(Vector3.One * .5f);
+                            dialogueVisible("Why am I in a random room? Who was banging that door? \nThat is quite a weird note. No wonder my head hurts!");
+                        }
+                        else if (go.Name.Equals("sock1"))
+                        {
+                            dialogueVisible("My clothes are everywhere, at least I found my precious sock!");
+                        }
+                        else if (go.Name.Equals("sock2"))
+                        {
+                            dialogueVisible("Well here is my less precious sock.");
+                        }
+                        else if (go.Name.Equals("shirt"))
+                        {
+                            dialogueVisible("My green shirt and it doesn't look that dirty! I'll wear it.");
+                        }
+                        else if (go.Name.Equals("pants"))
+                        {
+                            dialogueVisible("My blue jeans! Seems like it gained another battle scar.");
+                        }
+                        else if (go.Name.Equals("photo1"))
+                        {
+                            dialogueVisible("That is the last thing I remember from last night.");
+                        }
+                        else if (go.Name.Equals("photo2"))
+                        {
+                            dialogueVisible("I look pretty rough here, what is that circle for?");
+                        }
+                        else if (go.Name.Equals("photo3"))
+                        {
+                            dialogueVisible("Why is there someone behind me in this picture?");
+                        }
+                        else if (go.Name.Equals("photo4"))
+                        {
+                            dialogueVisible("Were they following me? At least, I am in a random room.");
+                        }
+                        else if (go.Name.Equals("hammer"))
+                        {
+                            dialogueVisible("I can use this hammer to get rid of the planks.");
+                        }
+                        else if (go.Name.Equals("key"))
+                        {
+                            dialogueVisible("I can use this key for the lock. I'm quite skilled when I'm drunk?");
                         }
 
-                        PlaceAndFaceItem(go, plr);
-                        go.Name = "examine" + go.Name; 
-                        SetReticleoVisible(false);
+                        if (go.Name.Contains("photo") || go.Name.Contains("sock") || go.Name.Equals("pants") || go.Name.Equals("shirt") || go.Name.Equals("note") || go.Name.Equals("key") || go.Name.Equals("hammer"))
+                        {
+                            events.Publish(new PlaySfxEvent("examine", _sfxVolume, false));
+
+                            _oldExamineName = go.Name;
+                            _oldExaminePos = go.Transform.Position;
+                            _oldExamineRot = go.Transform.Rotation;
+
+
+                            if (go.Name.Equals("pants") || go.Name.Equals("shirt"))
+                            {
+                                go.Transform.ScaleBy(Vector3.One * .5f);
+                            }
+
+                            PlaceAndFaceItem(go, plr);
+                            go.Name = "examine" + go.Name;
+                            SetReticleoVisible(false);
+                        }
                     }
                 }
                 else
                 {
-                    var item = _sceneManager.ActiveScene.Find(g => g.Name.Contains("examine"));
-                    look.Enabled = true;
-                    move.Enabled = true;
-                    item.Transform.RotateToWorld(_oldExamineRot);
-                    item.Transform.TranslateTo(_oldExaminePos);
-                    item.Name = _oldExamineName;
-                    if (go.Name.Equals("pants") || go.Name.Equals("shirt"))
-                        go.Transform.ScaleBy(Vector3.One * 2f);
+                    if (!go.Name.Equals("plank") && !go.Name.Equals("lock"))
+                    {
+                        var item = _sceneManager.ActiveScene.Find(g => g.Name.Contains("examine"));
+                        look.Enabled = true;
+                        move.Enabled = true;
+                        item.Transform.RotateToWorld(_oldExamineRot);
+                        item.Transform.TranslateTo(_oldExaminePos);
+                        item.Name = _oldExamineName;
+                        if (go.Name.Equals("pants") || go.Name.Equals("shirt"))
+                            go.Transform.ScaleBy(Vector3.One * 2f);
 
-                    _textDialogue.TextProvider = () => "";
-                    SetReticleoVisible(true);
-                    _isExamining = false;
+                        dialogueVisible("");
+                        SetReticleoVisible(true);
+                        _isExamining = false;
+                    }
                 }
 
             }
         }
-
         void PlaceAndFaceItem(GameObject item, GameObject cam)
         {
             // Position
-            Vector3 forward = Vector3.Transform( Vector3.Forward, cam.Transform.Rotation ); 
-            Vector3 targetPos = cam.Transform.Position + forward * 2f; 
-            item.Transform.TranslateTo(targetPos); 
+            Vector3 forward = Vector3.Transform(Vector3.Forward, cam.Transform.Rotation);
+            Vector3 targetPos = cam.Transform.Position + forward * 2f;
+            item.Transform.TranslateTo(targetPos);
             // Rotation (face player)
-            Vector3 dirToCamera = cam.Transform.Position - targetPos; 
-            dirToCamera.Normalize(); 
-            Quaternion faceCamera = Quaternion.CreateFromRotationMatrix( Matrix.CreateWorld( Vector3.Zero, -dirToCamera, Vector3.Up ) ); 
+            Vector3 dirToCamera = cam.Transform.Position - targetPos;
+            dirToCamera.Normalize();
+            Quaternion faceCamera = Quaternion.CreateFromRotationMatrix(Matrix.CreateWorld(Vector3.Zero, -dirToCamera, Vector3.Up));
             item.Transform.RotateToWorld(faceCamera);
         }
+        
 
         /// <summary>
         /// Adds a single-part FBX model into the scene.
@@ -1358,16 +1493,64 @@ namespace GDGame
             rigidBody.Mass = 1.0f;
         }
 
+        private void spawnModels()
+        {
+            List<String> list = ["hammer", "key", "lock", "plank", "plank"];
+            List<Vector3> positions = [new Vector3(-13, 0.3f, 20), new Vector3(-15, 0.05f, 1.7f), new Vector3(-4.4f, 2f, 13.42f), new Vector3(-3.4f, 1f, 13.2f), new Vector3(-3.4f, 3.5f, 13.2f)];
+            List<Vector3> rotations = [new Vector3(MathHelper.ToRadians(-90), 0,0), new Vector3(MathHelper.ToRadians(-90), 0, 0), new Vector3(MathHelper.ToRadians(-30), MathHelper.ToRadians(180), MathHelper.ToRadians(-90)), new Vector3(0, 0, MathHelper.ToRadians(-35)), new Vector3(0, 0, MathHelper.ToRadians(-25))];
+            List<Vector3> scale = [new Vector3(0.07f, 0.07f, 0.8f), new Vector3(0.07f, 0.07f, 0.07f), new Vector3(0.2f, 0.2f, 0.2f), new Vector3(0.2f, 0.2f, 0.05f), new Vector3(0.2f, 0.2f, 0.05f)];
+
+            for (int i = 0; i < 5; i++)
+            {
+                CollidableModel(list[i], positions[i], rotations[i], scale[i]);
+            }
+        } 
+
+        private void CollidableModel(String name, Vector3 position, Vector3 rotation, Vector3 scale)
+        {
+            var go = new GameObject(name);
+            go.Transform.RotateEulerBy(rotation);
+            go.Transform.TranslateTo(position);
+            go.Transform.ScaleTo(scale);
+
+            var model = _modelDictionary.Get(name);
+            var texture = _textureDictionary.Get("colourmap");
+            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
+            go.AddComponent(meshFilter);
+
+            var meshRenderer = go.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicLit;
+            meshRenderer.Overrides.MainTexture = texture;
+            _sceneManager.ActiveScene.Add(go);
+
+            // Add box collider (1x1x1 cube)
+            var collider = go.AddComponent<BoxCollider>();
+            collider.Size = scale*5f;
+            if (name.Equals("hammer"))
+                collider.Size = new Vector3(0.4f, 0.35f, 2.2f);
+            if (name.Equals("plank"))
+                collider.Size = new Vector3(2f, 1f, 0.25f);
+            collider.Center = Vector3.Zero;
+
+            // Add rigidbody (Dynamic so it falls)
+            var rigidBody = go.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
+            rigidBody.Mass = 1.0f;
+            
+            if( name.Equals("key") || name.Equals("hammer"))
+                go.Enabled = false;
+        }
+
         private void DemoStuff()
         {
             // Get new state
             _newKBState = Keyboard.GetState();
-            DemoEventPublish();
-            DemoCameraSwitch();
+            //DemoEventPublish();
+            //DemoCameraSwitch();
             DemoToggleFullscreen();
-            DemoAudioSystem();
-            DemoOrchestrationSystem();
-            DemoImpulsePublish();
+            //DemoAudioSystem();
+            //DemoOrchestrationSystem();
+            //DemoImpulsePublish();
             //To allow object editing in scene
             //ObjectEditor("door");
 
@@ -1419,64 +1602,32 @@ namespace GDGame
             }
         }
 
-        private void DemoImpulsePublish()
+        private void IntroOrchestrationSystem()
         {
-            var impulses = EngineContext.Instance.Impulses;
+            var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>().Orchestrator;
+            //needed to make orchestration work
+            int i;
+            //wakeup, intro camera, main camera
+            orchestrator.Build("intro")
+                .WaitSeconds(2)
 
-            // a simple explosion reaction
-            bool isZPressed = _newKBState.IsKeyDown(Keys.Z) && !_oldKBState.IsKeyDown(Keys.Z);
-            if (isZPressed)
-            {
-                float duration = 0.35f;
-                float amplitude = 0.6f;
-
-                impulses.CreateContinuousSource(
-                    (elapsed, totalDuration) =>
-                    {
-                        // Random 2D screen-space-ish direction
-                        Vector3 dir = MathUtility.RandomShakeXY();
-
-                        // Let Eased3DImpulse use its default easing (e.g. Ease.Linear)
-                        return new Eased3DImpulse(
-                            channel: "camera/impulse",
-                            direction: dir,
-                            amplitude: amplitude,
-                            time: elapsed,
-                            duration: totalDuration);
-                    },
-                    duration,
-                    true);
-            }
-
-            // like a locked door try and fail
-            bool isCPressed = _newKBState.IsKeyDown(Keys.X) && !_oldKBState.IsKeyDown(Keys.X);
-            if (isCPressed)
-            {
-                float duration = 0.2f;
-                float amplitude = 0.1f;
-
-                impulses.CreateContinuousSource(
-                    (elapsed, totalDuration) =>
-                    {
-                        float jitter = 0.05f;
-
-                        // Small random left/right component
-                        float z = (float)(Random.Shared.NextDouble() * 2.0 - 1.0) * jitter;
-
-                        // Backward in world-space 
-                        Vector3 dir = new Vector3(0, 0, z);
-
-                        return new Eased3DImpulse(
-                            channel: "camera/impulse",
-                            direction: dir,
-                            amplitude: amplitude,
-                            time: elapsed,
-                            duration: totalDuration,
-                            ease: Ease.EaseOutQuad); // snappier than cubic, but still smooth
-                    },
-                    duration,
-                    true);
-            }
+                .Publish(new PlaySfxEvent("door knock", _sfxVolume, false, null))
+                .WaitSeconds(1)
+                .Do((i) => { dialogueVisible("Who's banging the door?"); })
+                .WaitSeconds(4)
+                .Publish(new PlaySfxEvent("headache", _sfxVolume, false, null))
+                .Do((i) => { dialogueVisible("My head hurts so much what happened?"); })
+                .WaitSeconds(3)
+                .Do((i) => { dialogueVisible("This is not my house?"); })
+                .WaitSeconds(2)
+                .Publish(new PlayMusicEvent("confused music", _musicVolume, 8))
+                .Do((i) => { dialogueVisible("My head!!!"); })
+                .Publish(new PlaySfxEvent("headache", _sfxVolume, false, null))
+                .WaitSeconds(3)
+                .Do((i) => { dialogueVisible("I need to get my stuff and leave this place."); })
+                .WaitSeconds(3)
+                .Do((i) => { dialogueVisible(""); })
+                .Register();
         }
 
         private void DemoOrchestrationSystem()
