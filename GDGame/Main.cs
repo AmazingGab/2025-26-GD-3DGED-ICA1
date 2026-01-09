@@ -33,6 +33,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SharpDX.Direct2D1.Effects;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
@@ -74,7 +75,15 @@ namespace GDGame
 
         private GameObject _dialogueGO;
         private UIText _textDialogue;
-       
+        private float _musicVolume = 0.5f;
+        private string _currentMusic = "confused music";
+        private float _sfxVolume = 1;
+        private bool _isExamining = false;
+        private string _oldExamineName;
+        private Vector3 _oldExaminePos;
+        private Quaternion _oldExamineRot;
+        private GameObject _uiReticleGO;
+
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -176,6 +185,8 @@ namespace GDGame
 
             //todelet
             NewDialogue();
+            var events = EngineContext.Instance.Events;
+            events.Publish(new PlayMusicEvent("confused music", _musicVolume, 8));
             base.Initialize();
         }
 
@@ -234,8 +245,6 @@ namespace GDGame
             {
                 _sceneManager.Paused = false;
                 _menuManager.HideMenus();
-
-                //fade out menu sound
             };
 
             _menuManager.ExitRequested += () =>
@@ -245,19 +254,17 @@ namespace GDGame
 
             _menuManager.MusicVolumeChanged += v =>
             {
-                // Forward to audio manager
-                System.Diagnostics.Debug.WriteLine("MusicVolumeChanged");
+                _musicVolume = v/10;
 
-                //raise event to set sound
-               // EngineContext.Instance.Events.Publish(new PlaySfxEvent)
+                EngineContext.Instance.Events.Publish(new StopMusicEvent(0));
+                EngineContext.Instance.Events.Publish(new PlayMusicEvent(_currentMusic, _musicVolume, 5));
             };
 
             _menuManager.SfxVolumeChanged += v =>
             {
-                // Forward to audio manager
-                System.Diagnostics.Debug.WriteLine("SfxVolumeChanged");
+                _sfxVolume = v / 10;
 
-                //raise event to set sound
+                EngineContext.Instance.Events.Publish(new StopAllSfxEvent());
             };
 
    
@@ -931,7 +938,7 @@ namespace GDGame
 
         private void InitializeUIReticleRenderer()
         {
-            var uiReticleGO = new GameObject("HUD");
+            _uiReticleGO = new GameObject("HUD");
 
             var reticleAtlas = _textureDictionary.Get("crosshair");
             var uiFont = _fontDictionary.Get("mouse_reticle_font");
@@ -943,16 +950,16 @@ namespace GDGame
             reticle.Scale = new Vector2(0.1f, 0.1f);
             reticle.RotationSpeedDegPerSec = 0;
             reticle.LayerDepth = UILayer.Cursor;
-            uiReticleGO.AddComponent(reticle);
+            _uiReticleGO.AddComponent(reticle);
 
-            var textRenderer = uiReticleGO.AddComponent<UIText>();
+            var textRenderer = _uiReticleGO.AddComponent<UIText>();
             textRenderer.Font = uiFont;
-            textRenderer.Offset = new Vector2(0, 30);  // Position text below reticle
+            textRenderer.Offset = new Vector2(100, 30);  // Position text below reticle
             textRenderer.Color = Color.White;
             textRenderer.PositionProvider = () => _graphics.GraphicsDevice.Viewport.GetCenter();
             textRenderer.Anchor = TextAnchor.Center;
 
-            var picker = uiReticleGO.AddComponent<UIPickerInfo>();
+            var picker = _uiReticleGO.AddComponent<UIPickerInfo>();
             picker.HitMask = LayerMask.All;
             picker.MaxDistance = 5f;
             picker.HitTriggers = false;
@@ -963,39 +970,50 @@ namespace GDGame
                 var go = hit.Body?.GameObject;
                 if (go == null)
                     return string.Empty;
+                _newMouseState = Mouse.GetState();
                 if (go.Name.Contains("photo"))
                 {
-                    _newMouseState = Mouse.GetState();
                     ClickedItem(go);
-
                     _oldMouseState = _newMouseState;
-                    return "A polaroid picture";
+                    return "A polaroid picture\n--\nRight Click to Examine\nLeft Click to Take";
                 }
                 if (go.Name.Contains("sock") || go.Name.Equals("shirt") || go.Name.Equals("pants"))
                 {
-                    _newMouseState = Mouse.GetState();
                     ClickedItem(go);
-
                     _oldMouseState = _newMouseState;
-
-                    return "My clothes piece";
+                    return "My clothes piece\n--\nRight Click to Examine\nLeft Click to Take";
                 }
-                if (go.Name.Equals("note")) {
-                    _newMouseState = Mouse.GetState();
+                if (go.Name.Equals("note")) 
+                {
                     ClickedItem(go);
-
                     _oldMouseState = _newMouseState;
-
-                    return "My drunk note";
+                    return "My drunk note\n--\nRight Click to Examine\nLeft Click to Take";
+                }
+                if (go.Name.Contains("examine"))
+                {
+                    ClickedItem(go);
+                    _oldMouseState = _newMouseState;
                 }
 
+                _oldMouseState = _newMouseState;
                 return "";
             };
 
-            _sceneManager.ActiveScene.Add(uiReticleGO);
+            _sceneManager.ActiveScene.Add(_uiReticleGO);
 
             // Hide mouse since reticle will take its place
             IsMouseVisible = false;
+        }
+
+        /// <summary>
+        /// Toggles the the visibility of reticle UI element.
+        /// </summary>
+        private void SetReticleoVisible(bool state)
+        {
+            if (_uiReticleGO == null) return;
+
+            foreach (var ui in _uiReticleGO.GetComponents<UIRenderer>())
+                ui.Enabled = state;
         }
 
         private void NewDialogue()
@@ -1012,80 +1030,139 @@ namespace GDGame
 
         private void ClickedItem(GameObject go)
         {
+            var events = EngineContext.Instance.Events;
             if (_newMouseState.LeftButton == ButtonState.Pressed && _oldMouseState.LeftButton == ButtonState.Released)
             {
-                if (go.Name.Equals("note"))
+                if (!_isExamining)
                 {
-                    _textDialogue.TextProvider = () => "Wow what a weird note";
-                    go.Enabled = false;
-                    for (int i = 1; i < 5; i++)
+                    if (go.Name.Equals("note"))
                     {
-                        insightItems[i].Enabled = true;
+                        for (int i = 1; i < 5; i++)
+                            insightItems[i].Enabled = true;
+
+                        events.Publish(new StopMusicEvent(1));
+                        events.Publish(new PlayMusicEvent("calm music", _musicVolume, 1));
+                        _currentMusic = "calm music";
+                        _insight += 4;
                     }
-                    _insight += 5;
-                }
-                else if (go.Name.Equals("sock1"))
-                {
-                    _textDialogue.TextProvider = () => "My precious sock";
-                    go.Enabled = false;
-                    _insight++;
-                    insightItems[_insight - 1].Enabled = true;
-                }
-                else if (go.Name.Equals("sock2"))
-                {
-                    _textDialogue.TextProvider = () => "My less precious sock";
-                    go.Enabled = false;
-                    _insight++;
-                    insightItems[_insight - 1].Enabled = true;
-                }
-                else if (go.Name.Equals("shirt"))
-                {
-                    _textDialogue.TextProvider = () => "My green shirt still looks wearable";
-                    go.Enabled = false;
-                    _insight++;
-                    insightItems[_insight - 1].Enabled = true;
-                }
-                else if (go.Name.Equals("pants"))
-                {
-                    _textDialogue.TextProvider = () => "My blue jeans with a new tear";
-                    go.Enabled = false;
-                    _insight++;
-                    insightItems[_insight - 1].Enabled = true;
-                }
-                else if (go.Name.Equals("photo1"))
-                {
-                    _textDialogue.TextProvider = () => "Wow a very cool picture";
-                    go.Enabled = false;
-                    //_insight++;
 
-                }
-                else if (go.Name.Equals("photo2"))
-                {
-                    _textDialogue.TextProvider = () => "Wow I look pretty rough here";
-                    go.Enabled = false;
-                    //_insight++;
 
+                    if (go.Name.Contains("photo") || go.Name.Contains("sock") || go.Name.Equals("pants") || go.Name.Equals("shirt") || go.Name.Equals("note"))
+                    {
+                        events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
+                        if (!go.Name.Contains("photo"))
+                        {
+                            _insight++;
+                            insightItems[_insight - 1].Enabled = true;
+                        }
+                            
+                        go.Enabled = false;
+                        go.Name = "collected";
+                        //cant destroy
+                        //go.Destroy();
+                    }
                 }
-                else if (go.Name.Equals("photo3"))
-                {
-                    _textDialogue.TextProvider = () => "Who.. is that behind me";
-                    go.Enabled = false;
-                    //_insight++;
+            }
 
-                }
-                else if (go.Name.Equals("photo4"))
+            if(_newMouseState.RightButton == ButtonState.Pressed && _oldMouseState.RightButton == ButtonState.Released)
+            {
+                
+                var plr = _sceneManager.ActiveScene.Find(go => go.Name.Equals("simple camera"));
+                var look = plr.GetComponent<MouseYawPitchController>();
+                var move = plr.GetComponent<SimpleDriveController>();
+                if (!_isExamining)
                 {
-                    _textDialogue.TextProvider = () => "Were they following me?";
-                    go.Enabled = false;
-                    //_insight++;
+                    _isExamining = true;
+                    
+                    look.Enabled = false;
+                    move.Enabled = false;
 
+                    if (go.Name.Equals("note"))
+                    {
+                        _textDialogue.TextProvider = () => "Wow what a weird note";
+                    }
+                    else if (go.Name.Equals("sock1"))
+                    {
+                        _textDialogue.TextProvider = () => "My precious sock";
+                    }
+                    else if (go.Name.Equals("sock2"))
+                    {
+                        _textDialogue.TextProvider = () => "My less precious sock";
+                    }
+                    else if (go.Name.Equals("shirt"))
+                    {
+                        _textDialogue.TextProvider = () => "My green shirt still looks wearable";
+                    }
+                    else if (go.Name.Equals("pants"))
+                    {
+                        _textDialogue.TextProvider = () => "My blue jeans with a new tear";
+                    }
+                    else if (go.Name.Equals("photo1"))
+                    {
+                        _textDialogue.TextProvider = () => "Wow a very cool picture";
+                    }
+                    else if (go.Name.Equals("photo2"))
+                    {
+                        _textDialogue.TextProvider = () => "Wow I look pretty rough here";
+                    }
+                    else if (go.Name.Equals("photo3"))
+                    {
+                        _textDialogue.TextProvider = () => "Who.. is that behind me";
+                    }
+                    else if (go.Name.Equals("photo4"))
+                    {
+                        _textDialogue.TextProvider = () => "Were they following me?";
+                    }
+
+                    if (go.Name.Contains("photo") || go.Name.Contains("sock") || go.Name.Equals("pants") || go.Name.Equals("shirt") || go.Name.Equals("note"))
+                    {
+                        events.Publish(new PlaySfxEvent("examine", _sfxVolume, false));
+
+                        _oldExamineName = go.Name;
+                        _oldExaminePos = go.Transform.Position;
+                        _oldExamineRot = go.Transform.Rotation;
+
+                        
+                        if (go.Name.Equals("pants") || go.Name.Equals("shirt"))
+                        {
+                            go.Transform.ScaleBy(Vector3.One * .5f);
+                        }
+
+                        PlaceAndFaceItem(go, plr);
+                        go.Name = "examine" + go.Name; 
+                        SetReticleoVisible(false);
+                    }
                 }
                 else
                 {
+                    var item = _sceneManager.ActiveScene.Find(g => g.Name.Contains("examine"));
+                    look.Enabled = true;
+                    move.Enabled = true;
+                    item.Transform.RotateToWorld(_oldExamineRot);
+                    item.Transform.TranslateTo(_oldExaminePos);
+                    item.Name = _oldExamineName;
+                    if (go.Name.Equals("pants") || go.Name.Equals("shirt"))
+                        go.Transform.ScaleBy(Vector3.One * 2f);
+
                     _textDialogue.TextProvider = () => "";
+                    SetReticleoVisible(true);
+                    _isExamining = false;
                 }
 
             }
+        }
+
+        void PlaceAndFaceItem(GameObject item, GameObject cam)
+        {
+            // Position
+            Vector3 forward = Vector3.Transform( Vector3.Forward, cam.Transform.Rotation ); 
+            Vector3 targetPos = cam.Transform.Position + forward * 2f; 
+            item.Transform.TranslateTo(targetPos); 
+            // Rotation (face player)
+            Vector3 dirToCamera = cam.Transform.Position - targetPos; 
+            dirToCamera.Normalize(); 
+            Quaternion faceCamera = Quaternion.CreateFromRotationMatrix( Matrix.CreateWorld( Vector3.Zero, -dirToCamera, Vector3.Up ) ); 
+            item.Transform.RotateToWorld(faceCamera);
         }
 
         /// <summary>
@@ -1209,39 +1286,6 @@ namespace GDGame
         }
 
         #endregion
-
-        #region Demo Methods (remove in the game)
-
-        //#region Demo - PBR Lighting
-        //private void DemoPBRGameObject(string objectName, string modelName, Vector3 position, Vector3 scale, Vector3 eulerRotationDegrees, 
-        //    Texture2D albedoTexture, Texture2D normalTexture, Texture2D srmTexture, 
-        //    Color albedoColor, float roughness, float metallic)
-        //{
-        //    GameObject gameObject = null;
-
-        //    gameObject = new GameObject(objectName);
-        //    gameObject.Transform.TranslateTo(position);
-        //    gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-        //    gameObject.Transform.ScaleTo(scale);
-        //    var model = _modelDictionary.Get(modelName);
-        //    var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-        //    gameObject.AddComponent(meshFilter);
-        //    var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-
-        //    #region PBR specific material settings
-        //    // Set material properties
-        //    _matPBR.AlbedoTexture = albedoTexture;
-        //    _matPBR.NormalTexture = normalTexture;
-        //    _matPBR.SRMTexture = srmTexture;
-        //    _matPBR.AlbedoColor = albedoColor;
-        //    _matPBR.DefaultRoughness = roughness;
-        //    _matPBR.DefaultMetallic = metallic;
-        //    meshRenderer.Material = _matPBR.Material;
-        //    #endregion
-
-        //    _sceneManager.ActiveScene.Add(gameObject);
-        //} 
-        //#endregion
 
         #region Demo - Game State
         private void SetWinConditions()
@@ -1489,14 +1533,13 @@ namespace GDGame
             bool isD3Pressed = _newKBState.IsKeyDown(Keys.D3) && !_oldKBState.IsKeyDown(Keys.D3);
             if (isD3Pressed)
             {
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",
-                    1, false, null));
+                //events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",1, false, null));
             }
 
             bool isD4Pressed = _newKBState.IsKeyDown(Keys.D4) && !_oldKBState.IsKeyDown(Keys.D4);
             if (isD4Pressed)
             {
-                events.Publish(new PlayMusicEvent("secret_door", 1, 8));
+                //events.Publish(new PlayMusicEvent("secret_door", 1, 8));
             }
 
             bool isD5Pressed = _newKBState.IsKeyDown(Keys.D5) && !_oldKBState.IsKeyDown(Keys.D5);
@@ -1508,8 +1551,7 @@ namespace GDGame
             bool isD6Pressed = _newKBState.IsKeyDown(Keys.D6) && !_oldKBState.IsKeyDown(Keys.D6);
             if (isD6Pressed)
             {
-                events.Publish(new FadeChannelEvent(AudioMixer.AudioChannel.Master,
-                    0.1f, 4));
+                events.Publish(new FadeChannelEvent(AudioMixer.AudioChannel.Master, 0.1f, 4));
             }
 
             bool isD7Pressed = _newKBState.IsKeyDown(Keys.D7) && !_oldKBState.IsKeyDown(Keys.D7);
@@ -1519,8 +1561,7 @@ namespace GDGame
                 var go = _sceneManager.ActiveScene.Find(go => go.Name.Equals(AppData.PLAYER_NAME));
                 Transform emitterTransform = go.Transform;
 
-                events.Publish(new PlaySfxEvent("hand_gun1",
-                    1, true, emitterTransform));
+                //events.Publish(new PlaySfxEvent("hand_gun1", 1, true, emitterTransform));
             }
         }
 
@@ -1539,24 +1580,21 @@ namespace GDGame
             if (isFirst)
             {
                 events.Post(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",
-                  1, false, null));
+                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",1, false, null));
             }
 
             bool isThird = _newKBState.IsKeyDown(Keys.D2) && !_oldKBState.IsKeyDown(Keys.D2);
             if (isThird)
             {
                 events.Post(new CameraEvent(AppData.CAMERA_NAME_THIRD_PERSON));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",
-                1, false, null));
+                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1", 1, false, null));
             }
 
             bool simple = _newKBState.IsKeyDown(Keys.D3) && !_oldKBState.IsKeyDown(Keys.D3);
             if (simple)
             {
                 events.Post(new CameraEvent("simple camera"));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",
-                1, false, null));
+                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",1, false, null));
             }
         }
 
@@ -1783,7 +1821,5 @@ namespace GDGame
             //    $"[Collision] {nameA} (Layer {layerA}) <-> {nameB} (Layer {layerB})");
         }
 
-
-        #endregion
     }
 }
