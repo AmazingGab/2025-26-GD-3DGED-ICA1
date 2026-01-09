@@ -187,6 +187,10 @@
             "contentPath": "assets/sounds/keys"
         },
         {
+            "name": "selftalk",
+            "contentPath": "assets/sounds/selftalk"
+        },
+        {
             "name": "SFX_UI_Click_Designed_Pop_Generic_1",
             "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Generic_1"
         },

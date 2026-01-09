@@ -232,6 +232,12 @@
 /processorParam:Quality=Best
 /build:Assets/Sounds/plankbreak.wav
 
+#begin Assets/Sounds/selftalk.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Assets/Sounds/selftalk.wav
+
 #begin Assets/Sounds/UI/SFX_UI_Click_Designed_Pop_Generic_1.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
