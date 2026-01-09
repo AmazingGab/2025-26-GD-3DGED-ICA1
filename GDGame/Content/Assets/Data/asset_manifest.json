@@ -84,18 +84,6 @@
             "name": "white_1x1",
             "contentPath": "assets/textures/ui/icons/base/white_1x1"
         },
-        {
-            "name": "mainmenu_monkey",
-            "contentPath": "assets/textures/ui/backgrounds/mainmenu_monkey"
-        },
-        {
-            "name": "audiomenu_monkey",
-            "contentPath": "assets/textures/ui/backgrounds/audiomenu_monkey"
-        },
-        {
-            "name": "controlsmenu_monkey",
-            "contentPath": "assets/textures/ui/backgrounds/controlsmenu_monkey"
-        },
         ///UI - SLIDER
         {
             "name": "Free Flat Toggle Thumb Centre Icon",
@@ -116,40 +104,40 @@
             "contentPath": "assets/textures/ui/icons/buttons/rectangle/button_rectangle_10"
         },
         {
-            "name": "controlsmenu_monkey",
-            "contentPath": "assets/textures/ui/backgrounds/controlsmenu_monkey"
-        },
-        {
-            "name": "mouse_reticle",
-            "contentPath": "assets/textures/ui/mouse/reticleClosed"
-        },
+            "name": "backgroundimage",
+            "contentPath": "assets/textures/ui/backgrounds/roombackground"
+        }, 
         {
             "name": "crosshair",
             "contentPath": "assets/textures/ui/mouse/crosshair"
-        },
-        {
-            "name": "mainmenu",
-            "contentPath": "assets/textures/ui/backgrounds/mainmenu"
-        },
-        {
-            "name": "mainmenu_monkey",
-            "contentPath": "assets/textures/ui/backgrounds/mainmenu_monkey"
-        },
-        {
-            "name": "controlsmenu_monkey",
-            "contentPath": "assets/textures/ui/backgrounds/controlsmenu_monkey"
         }
     ],
-  "models": [
-    {
-      "name": "door",
-      "contentPath": "assets/models/door"
-    },
-    {
-        "name": "room",
-        "contentPath": "assets/models/room"
-    }
-  ],
+    "models": [
+        {
+            "name": "door",
+            "contentPath": "assets/models/door"
+        },
+        {
+            "name": "hammer",
+            "contentPath": "assets/models/hammer"
+        },
+        {
+            "name": "key",
+            "contentPath": "assets/models/key"
+        },
+        {
+            "name": "plank",
+            "contentPath": "assets/models/plank"
+        },
+        {
+            "name": "lock",
+            "contentPath": "assets/models/lock"
+        },
+        {
+            "name": "room",
+            "contentPath": "assets/models/room"
+        }
+    ],
     "sounds": [
         {
             "name": "headache",

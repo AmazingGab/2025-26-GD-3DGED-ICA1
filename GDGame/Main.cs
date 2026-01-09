@@ -189,6 +189,7 @@ namespace GDGame
             NewDialogue();
             var events = EngineContext.Instance.Events;
             events.Publish(new PlayMusicEvent("confused music", _musicVolume, 8));
+            events.Publish(new PlaySfxEvent("door knock", 1, false, null));
             base.Initialize();
         }
 
@@ -260,9 +261,9 @@ namespace GDGame
             // Wire UIManager to the menu scene
             _menuManager.Initialize(_sceneManager.ActiveScene, 
                 btnTex, trackTex, handleTex, uiFont,
-                _textureDictionary.Get("mainmenu_monkey"),
-                 _textureDictionary.Get("audiomenu_monkey"),
-                  _textureDictionary.Get("controlsmenu_monkey"));
+                _textureDictionary.Get("backgroundimage"),
+                 _textureDictionary.Get("backgroundimage"),
+                  _textureDictionary.Get("backgroundimage"));
 
             // Subscribe to high-level events
             _menuManager.PlayRequested += () =>
@@ -332,45 +333,6 @@ namespace GDGame
             gameObject.Layer = LayerMask.Ground;
 
             _sceneManager.ActiveScene.Add(gameObject);
-        }
-
-        private void InitializePlayer()
-        {
-            GameObject player = InitializeModel(new Vector3(0, 5, 10),
-                new Vector3(0, 0, 0),
-                2 * Vector3.One, "crate1", "monkey1", AppData.PLAYER_NAME);
-
-            var simpleDriveController = new SimpleDriveController();
-            player.AddComponent(simpleDriveController);
-
-            // Listen for damage events on the player
-            player.AddComponent<DamageEventListener>();
-
-            // Adds an inventory to the player
-            player.AddComponent<InventoryComponent>();
-        }
-
-        private void InitializePIPCamera(Vector3 position,
-      Viewport viewport, int depth, int index = 0)
-        {
-            var pipCameraGO = new GameObject("PIP camera");
-            pipCameraGO.Transform.TranslateTo(position);
-            pipCameraGO.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0));
-
-            //if (index == 0)
-            //{
-            //    pipCameraGO.AddComponent<KeyboardWASDController>();
-            //    pipCameraGO.AddComponent<MouseYawPitchController>();
-            //}
-
-            var camera = pipCameraGO.AddComponent<Camera>();
-            camera.StackRole = Camera.StackType.Overlay;
-            camera.ClearFlags = Camera.ClearFlagsType.DepthOnly;
-            camera.Depth = depth; //-100
-
-            camera.Viewport = viewport; // new Viewport(0, 0, 400, 300);
-
-            _sceneManager.ActiveScene.Add(pipCameraGO);
         }
 
         private void InitializeAnimationCurves()
@@ -514,14 +476,6 @@ namespace GDGame
             _matAlphaCutout.SamplerState = SamplerState.LinearClamp;
 
             #endregion
-
-            //#region Lit PBR Effect
-            //// Load effect file
-            //Effect pbrEffect = _effectsDictionary.Get("pbr_effect");
-
-            //// Create a PBR material
-            //_matPBR = new PBRMaterial(pbrEffect, ownsEffect: false);
-            //#endregion
         }
 
         private void InitializeScene()
@@ -539,7 +493,7 @@ namespace GDGame
         private void InitializeSystems()
         {
             InitializePhysicsSystem();
-            InitializePhysicsDebugSystem(true);
+            InitializePhysicsDebugSystem(false);
             InitializeEventSystem();  //propagate events  
             InitializeInputSystem();  //input
             InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
@@ -550,7 +504,7 @@ namespace GDGame
             InitializeGameStateSystem();   //manage and track game state
                                            //  InitializeNavMeshSystem();
 
-            InitializeDebugInfo(true);
+            InitializeDebugInfo(false);
         }
 
         private void InitializeDebugInfo(bool showDebug)
@@ -1424,6 +1378,8 @@ namespace GDGame
             _oldKBState = _newKBState;
         }
 
+
+        //allows moving and rotating object in scene
         private void ObjectEditor(String item)
         {
             GameObject go = _sceneManager.ActiveScene.Find(go => go.Name.Equals(item));

@@ -24,32 +24,51 @@ namespace GDEngine.Core.Components
 
             var k = Keyboard.GetState();
 
-            // --- Rotation (H left, K right) around WORLD UP to avoid roll coupling ---
             float yawInput = 0f;
-            if (k.IsKeyDown(Keys.H)) yawInput += 1f;
-            if (k.IsKeyDown(Keys.K)) yawInput -= 1f;
+            if (k.IsKeyDown(Keys.A)) yawInput -= 1f;
+            if (k.IsKeyDown(Keys.D)) yawInput += 1f;
 
-            if (yawInput != 0f)
-            {
-                // worldSpace:true guarantees pure yaw about +Y, even if the object has tilt
-                Transform.RotateEulerBy(new Vector3(0f, yawInput * _turnSpeed * deltaTime, 0f), worldSpace: true);
-            }
-
-            // --- Translation (U forward, J back) along actual current facing ---
             float moveInput = 0f;
-            if (k.IsKeyDown(Keys.U)) moveInput -= 1f;
-            if (k.IsKeyDown(Keys.J)) moveInput += 1f;
+            if (k.IsKeyDown(Keys.W)) moveInput -= 1f;
+            if (k.IsKeyDown(Keys.S)) moveInput += 1f;
+
+            if (moveInput != 0f && yawInput != 0f)
+            {
+                Vector3 dirForward = Vector3.Normalize(Vector3.TransformNormal(Vector3.Forward, Transform.WorldMatrix));
+                Vector3 dirSide = Vector3.Normalize(Vector3.TransformNormal(Vector3.Left, Transform.WorldMatrix));
+
+
+                dirForward.Y = 0f;
+                dirSide.Y = 0f;
+                if (dirForward.LengthSquared() > 1e-8f) dirForward.Normalize();
+                if (dirSide.LengthSquared() > 1e-8f) dirSide.Normalize();
+
+                var mutualFactor = 1f / (float)System.Math.Sqrt(2f);
+
+
+                Vector3 worldDelta = -dirForward * (mutualFactor * moveInput * _moveSpeed * deltaTime)
+                                     + dirSide * (-mutualFactor * yawInput * _moveSpeed * deltaTime);
+                Transform.TranslateBy(worldDelta, worldSpace: true);
+                return;
+            }
 
             if (moveInput != 0f)
             {
-                // Derive forward from the world matrix (works regardless of row/column basis)
                 Vector3 dir = Vector3.Normalize(Vector3.TransformNormal(Vector3.Forward, Transform.WorldMatrix));
+                dir.Y = 0f;
+                if (dir.LengthSquared() > 1e-8f) dir.Normalize();
+                Vector3 worldDelta = -dir * (moveInput * _moveSpeed * deltaTime);
+                Transform.TranslateBy(worldDelta, worldSpace: true);
+                return;
+            }
 
-                // Keep motion planar (comment out next line if you want vertical movement)
+            if (yawInput != 0f)
+            {
+                Vector3 dir = Vector3.Normalize(Vector3.TransformNormal(Vector3.Left, Transform.WorldMatrix));
                 dir.Y = 0f;
                 if (dir.LengthSquared() > 1e-8f) dir.Normalize();
 
-                Vector3 worldDelta = -dir * (moveInput * _moveSpeed * deltaTime);
+                Vector3 worldDelta = -dir * (yawInput * _moveSpeed * deltaTime);
                 Transform.TranslateBy(worldDelta, worldSpace: true);
             }
         }
