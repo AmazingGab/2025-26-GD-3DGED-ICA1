@@ -75,9 +75,9 @@ namespace GDGame
 
         private GameObject _dialogueGO;
         private UIText _textDialogue;
-        private float _musicVolume = 0.5f;
+        private float _musicVolume = 0.01f;
         private string _currentMusic = "confused music";
-        private float _sfxVolume = 1;
+        private float _sfxVolume = 0.7f;
         private bool _isExamining = false;
         private string _oldExamineName;
         private Vector3 _oldExaminePos;
@@ -166,7 +166,7 @@ namespace GDGame
             //Color albedoColor, float roughness, float metallic);
             #endregion
 
-        #endregion
+            #endregion
 
             // Mouse reticle
             InitializeUI();
@@ -183,11 +183,35 @@ namespace GDGame
             // Set the active scene
             _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
 
+            LoadEmitters();
+
             //todelet
             NewDialogue();
             var events = EngineContext.Instance.Events;
             events.Publish(new PlayMusicEvent("confused music", _musicVolume, 8));
             base.Initialize();
+        }
+
+        private void LoadEmitters()
+        {
+            GameObject birdEmitter = new GameObject("Bird Emitter");
+            var soundEmitter = birdEmitter.AddComponent<SoundEmitter>();
+            soundEmitter.Sound = "birds";
+            soundEmitter.Min = 170;
+            soundEmitter.Max = 200;
+
+            birdEmitter.Transform.TranslateTo(new Vector3(-300, 2, 5));
+
+            _sceneManager.ActiveScene.Add(birdEmitter);
+
+            GameObject carEmitter = new GameObject("Car Emitter");
+            var carSoundEmitter = carEmitter.AddComponent<SoundEmitter>();
+            carSoundEmitter.Sound = "cars honk";
+            carSoundEmitter.Min = 20;
+            carSoundEmitter.Max = 60;
+
+            carEmitter.Transform.TranslateTo(new Vector3(300, 2, 10));
+            _sceneManager.ActiveScene.Add(carEmitter);
         }
 
         private void SetPauseShowMenu()
@@ -254,7 +278,7 @@ namespace GDGame
 
             _menuManager.MusicVolumeChanged += v =>
             {
-                _musicVolume = v/10;
+                _musicVolume = v/100;
 
                 EngineContext.Instance.Events.Publish(new StopMusicEvent(0));
                 EngineContext.Instance.Events.Publish(new PlayMusicEvent(_currentMusic, _musicVolume, 5));
@@ -503,7 +527,7 @@ namespace GDGame
         private void InitializeScene()
         {
             // Make a scene that will store all drawn objects and systems for that level
-            var scene = new Scene(EngineContext.Instance, "outdoors - level 1");
+            var scene = new Scene(EngineContext.Instance, "The Room");
 
             // Add each new scene into the manager
             _sceneManager.AddScene(AppData.LEVEL_1_NAME, scene);
@@ -1391,7 +1415,7 @@ namespace GDGame
             DemoOrchestrationSystem();
             DemoImpulsePublish();
             //To allow object editing in scene
-            //ObjectEditor("sock1");
+            //ObjectEditor("door");
 
 
             _currentHealth--;

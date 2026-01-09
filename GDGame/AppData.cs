@@ -29,12 +29,8 @@ namespace GDGame
         public static readonly string GROUND_TEXTURE_PATH =
             "assets/textures/foliage/ground/grass1";
 
-        public static readonly string TREE_TEXTURE_KEY = "tree4";
-
         public static readonly string PERF_STATS_FONT_KEY = "perf_stats_font";
         public static readonly string MOUSE_RETICLE_FONT_KEY = "mouse_reticle_font";
-
-        public static readonly string RETICLE_ATLAS_KEY = "Crosshair_21";
 
         public static readonly string SKYBOX_BACK_TEXTURE_KEY = "skybox_back";
         public static readonly string SKYBOX_LEFT_TEXTURE_KEY = "skybox_left";
@@ -42,15 +38,13 @@ namespace GDGame
         public static readonly string SKYBOX_FRONT_TEXTURE_KEY = "skybox_front";
         public static readonly string SKYBOX_SKY_TEXTURE_KEY = "skybox_sky";
 
-        public static readonly string PLAYER_TEXTURE_KEY = "crate1";
-        public static readonly string PLAYER_MODEL_KEY = "monkey1";
 
         #endregion
 
         #region GameObjects
 
         public static readonly string SCENE_NAME_OUTDOORS_LEVEL1 =
-            "outdoors - level 1";
+            "The ROOM";
 
         public static readonly string PLAYER_NAME = "The Player";
         public static readonly string TEST_CRATE_NAME = "test crate textured cube";
