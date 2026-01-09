@@ -93,11 +93,6 @@
             "name": "Free Flat Hyphen Icon",
             "contentPath": "assets/textures/ui/icons/slider/Free Flat Hyphen Icon"
         },
-        ///UI - GRADIENTS
-        {
-            "name": "Free Flat Gradient Vertical (Middle) Icon",
-            "contentPath": "assets/textures/ui/gradients/Free Flat Gradient Vertical (Middle) Icon"
-        },
         ///UI - BUTTONS
         {
             "name": "button_rectangle_10",
@@ -110,6 +105,14 @@
         {
             "name": "dialogue",
             "contentPath": "assets/textures/ui/backgrounds/dialogue"
+        },
+        {
+            "name": "logo",
+            "contentPath": "assets/textures/ui/backgrounds/logo"
+        },
+        {
+            "name": "controls",
+            "contentPath": "assets/textures/ui/backgrounds/controls"
         },
         {
             "name": "crosshair",

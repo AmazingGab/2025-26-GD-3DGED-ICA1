@@ -4,6 +4,7 @@ using GDEngine.Core.Rendering.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace GDEngine.Core.Managers
 {
@@ -65,6 +66,8 @@ namespace GDEngine.Core.Managers
         private Texture2D? _mainPanelBackground;
         private Texture2D? _audioPanelBackground;
         private Texture2D? _controlsPanelBackground;
+        private Texture2D? _gameLogoIcon;
+        private Texture2D _controlIcon;
         #endregion
 
         #region Properties
@@ -126,7 +129,9 @@ namespace GDEngine.Core.Managers
          SpriteFont font,
          Texture2D mainPanelBackground,
          Texture2D audioPanelBackground,
-         Texture2D controlsPanelBackground)
+         Texture2D controlsPanelBackground,
+         Texture2D gameLogoIcon,
+         Texture2D controlsIcon)
         {
             if (menuScene == null)
                 throw new ArgumentNullException(nameof(menuScene));
@@ -144,6 +149,10 @@ namespace GDEngine.Core.Managers
                 throw new ArgumentNullException(nameof(audioPanelBackground));
             if (controlsPanelBackground == null)
                 throw new ArgumentNullException(nameof(controlsPanelBackground));
+            if (gameLogoIcon == null)
+                throw new ArgumentNullException(nameof(gameLogoIcon));
+            if (controlsIcon == null)
+                throw new ArgumentNullException(nameof(controlsIcon));
 
             _menuScene = menuScene;
             _buttonTexture = buttonTexture;
@@ -154,6 +163,8 @@ namespace GDEngine.Core.Managers
             _mainPanelBackground = mainPanelBackground;
             _audioPanelBackground = audioPanelBackground;
             _controlsPanelBackground = controlsPanelBackground;
+            _gameLogoIcon = gameLogoIcon;
+            _controlIcon = controlsIcon;
 
             _configured = true;
 
@@ -270,20 +281,35 @@ namespace GDEngine.Core.Managers
                 _buttonTexture!,
                 _font!,
                 OnAudioClicked,
-                Color.LightGreen);
+                Color.Black);
 
             _controlsButton = _mainMenuPanel.AddButton(
                 "Controls",
                 _buttonTexture!,
                 _font!,
                 OnControlsClicked,
-                Color.LightBlue);
+                Color.Black);
 
             _exitButton = _mainMenuPanel.AddButton(
-        "Exit",
-        _buttonTexture!,
-        _font!,
-        OnExitClicked);
+                "Exit",
+                _buttonTexture!,
+                _font!,
+                OnExitClicked,
+                Color.Black);
+
+            var logoTexture = mainRoot.AddComponent<UITexture>();
+            logoTexture.Texture = _gameLogoIcon;
+            logoTexture.Size = new Vector2(500, 200);
+            logoTexture.Position = new Vector2((backBufferWidth - 600), 100);
+            logoTexture.LayerDepth = UILayer.Menu;
+
+            var descText = mainRoot.AddComponent<UIText>();
+            descText.Font = _font;                                                                                                                                    
+            descText.TextProvider = () => "A narrative experience about \nwaking up after a blackout \nand uncovering the truth \nbehind the night before. \nCreating awareness about \nresponsible drinking!";
+            descText.PositionProvider = () => new Vector2((backBufferWidth - 650), 400);
+            descText.Color = Color.White;
+            descText.LayerDepth = UILayer.MenuFront;
+
 
             // Tell the main panel to scan its hierarchy and register
             // all UITexture/UISelectable children (including the background).
@@ -324,7 +350,7 @@ namespace GDEngine.Core.Managers
                 1f,
                 0.1f,
                 OnMusicSliderChanged,
-                Color.Black);
+                Color.White);
 
             _sfxSlider = _audioMenuPanel.AddSlider(
                 "SFX",
@@ -335,7 +361,7 @@ namespace GDEngine.Core.Managers
                 1f,
                 0.7f,
                 OnSfxSliderChanged,
-                Color.Black);
+                Color.White);
 
             _audioBackButton = _audioMenuPanel.AddButton(
                 "Back",
@@ -377,6 +403,12 @@ namespace GDEngine.Core.Managers
                 _buttonTexture!,
                 _font!,
                 OnBackToMainFromControls);
+
+            var controlsText = controlsRoot.AddComponent<UITexture>();
+            controlsText.Texture = _controlIcon;
+            controlsText.Size = new Vector2(400, 500);
+            controlsText.Position = new Vector2((backBufferWidth - 500), 200);
+            controlsText.LayerDepth = UILayer.Menu;
 
             // Already present, keep it
             _controlsMenuPanel.RefreshChildren();

@@ -79,7 +79,7 @@ namespace GDGame
         private UIText _textDialogue;
         private float _musicVolume = 0.1f;
         private string _currentMusic = "confused music";
-        private float _sfxVolume = 0.7f;
+        private float _sfxVolume = 0.4f;
         private bool _isExamining = false;
         private string _oldExamineName;
         private Vector3 _oldExaminePos;
@@ -267,7 +267,9 @@ namespace GDGame
                 btnTex, trackTex, handleTex, uiFont,
                 _textureDictionary.Get("backgroundimage"),
                  _textureDictionary.Get("backgroundimage"),
-                  _textureDictionary.Get("backgroundimage"));
+                  _textureDictionary.Get("backgroundimage"), 
+                  _textureDictionary.Get("logo"), 
+                  _textureDictionary.Get("controls"));
 
             // Subscribe to high-level events
             _menuManager.PlayRequested += () =>
@@ -293,7 +295,7 @@ namespace GDGame
 
             _menuManager.SfxVolumeChanged += v =>
             {
-                _sfxVolume = v / 10;
+                _sfxVolume = v / 100;
 
                 EngineContext.Instance.Events.Publish(new StopAllSfxEvent());
             };
@@ -499,7 +501,7 @@ namespace GDGame
         private void InitializeSystems()
         {
             InitializePhysicsSystem();
-            InitializePhysicsDebugSystem(true);
+            InitializePhysicsDebugSystem(false);
             InitializeEventSystem();  //propagate events  
             InitializeInputSystem();  //input
             InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu

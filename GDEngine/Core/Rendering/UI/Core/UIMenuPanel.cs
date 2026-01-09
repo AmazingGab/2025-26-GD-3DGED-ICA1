@@ -160,6 +160,7 @@ namespace GDEngine.Core.Rendering.UI
             _itemCount++;
 
             Vector2 rowPos = GetRowPosition(rowIndex);
+            rowPos.X -= 300f;
 
             GameObject go = new GameObject($"Button_{text}");
             scene.Add(go);
