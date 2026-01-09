@@ -8,12 +8,14 @@ namespace GDEngine.Core.Components
     /// U/J = forward/back along current facing; H/K = yaw left/right (world-up).
     /// Forward is taken from the world matrix so it matches visual rotation
     /// regardless of row/column axis extraction.
+    /// 
+    /// This controller was made first in the GCA Group Project.
     /// </summary>
+    /// <reused>GCA Group Project</reused>
     public sealed class SimpleDriveController : Component
     {
         #region Fields
         private float _moveSpeed = 15f;  // units/sec
-        private float _turnSpeed = 2.5f;   // radians/sec
         #endregion
 
         #region Lifecycle Methods

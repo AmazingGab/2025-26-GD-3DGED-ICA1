@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
-using System.Security.AccessControl;
 using GDEngine.Core;
 using GDEngine.Core.Audio;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
-using GDEngine.Core.Components.Controllers.Physics;
 using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
@@ -27,13 +23,11 @@ using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
-using GDGame.Demos.Components;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using SharpDX.Direct2D1.Effects;
 using Color = Microsoft.Xna.Framework.Color;
 
 
@@ -51,17 +45,12 @@ namespace GDGame
         private ContentDictionary<Effect> _effectsDictionary;
         private bool _disposed = false;
         private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout, _matBasicUnlitGround;
-        private PBRMaterial _matPBR;
         #endregion
 
         #region Game Fileds
         private AnimationCurve3D _animationPositionCurve, _animationRotationCurve;
         private AnimationCurve _animationCurve;
         private KeyboardState _newKBState, _oldKBState;
-        private int _damageAmount;
-        private int _insight = 0;
-        private List<GameObject> insightItems = [];
-
 
         // Simple debug subscription for collision events
         private IDisposable _collisionSubscription;
@@ -75,6 +64,8 @@ namespace GDGame
         private MouseState _newMouseState;
         private MouseState _oldMouseState;
 
+        private int _insight = 0;
+        private List<GameObject> insightItems = [];
         private GameObject _dialogueGO;
         private UIText _textDialogue;
         private float _musicVolume = 0.1f;
@@ -140,36 +131,10 @@ namespace GDGame
             // Demo event listeners on collision
             InitializeCollisionEventListener();
 
-            // Collidable game object demos
-            //DemoCollidablePrimitive(new Vector3(0, 20, 5.1f), Vector3.One * 6, new Vector3(15, 45, 45));
-            //DemoCollidablePrimitive(new Vector3(0, 10, 5.2f), Vector3.One * 1, new Vector3(45, 0, 0));
-            //DemoCollidablePrimitive(new Vector3(0, 5, 5.3f), Vector3.One * 1, new Vector3(0, 0, 45));
-            //DemoCollidableModel(new Vector3(0, 50, 10), Vector3.Zero, new Vector3(2, 1.25f, 2));
-            //DemoCollidableModel(new Vector3(0, 40, 11), Vector3.Zero, new Vector3(2, 1.25f, 2));
-            //DemoCollidableModel(new Vector3(0, 25, 12), Vector3.Zero, new Vector3(2, 1.25f, 2));
-
-            #endregion
-
-            #region Insight items
-            AddNote();
-            AddClothes();
-            AddPolaroids();
-            spawnModels();
-            
             #endregion
 
             #region Loading GameObjects from JSON
             DemoLoadFromJSON();
-            #endregion
-
-            #region Sequencing using Orchestration
-            DemoOrchestrationSystem();
-            #endregion
-
-            #region PBR Lighting
-            //DemoPBRGameObject(string objectName, string modelName, Vector3 position, Vector3 scale, Vector3 eulerRotationDegrees,
-            //Texture2D albedoTexture, Texture2D normalTexture, Texture2D srmTexture,
-            //Color albedoColor, float roughness, float metallic);
             #endregion
 
             #endregion
@@ -189,14 +154,28 @@ namespace GDGame
             // Set the active scene
             _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
 
+            #region Insight items
+            AddNote();
+            AddClothes();
+            AddPolaroids();
+            spawnModels();
+
+            #endregion
+
+            //preloading items
             LoadEmitters();
-            CreatDialogue();
+            CreateDialogue();
             IntroOrchestrationSystem();
 
             _sceneManager.Paused = true;
             base.Initialize();
         }
 
+        /// <summary>
+        /// Loads spacial sound emitters and places them a bit further away.
+        /// 
+        /// Settings random intervals when the sound can play again.
+        /// </summary>
         private void LoadEmitters()
         {
             GameObject birdEmitter = new GameObject("Bird Emitter");
@@ -310,23 +289,10 @@ namespace GDGame
             MeshRenderer meshRenderer = null;
 
             gameObject = new GameObject("ground");
-            //meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            //meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
-            //     1,
-            //     1,
-            //     1,
-            //     1,
-            //     20,
-            //     20);
 
             gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
             gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
             gameObject.Transform.TranslateTo(new Vector3(0, -0.5f, 0));
-
-            //gameObject.AddComponent(meshFilter);
-            //meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            //meshRenderer.Material = _matBasicUnlitGround;
-            //meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
 
             // Add a box collider matching the ground size
             var collider = gameObject.AddComponent<BoxCollider>();
@@ -679,6 +645,7 @@ namespace GDGame
             _sceneManager.ActiveScene.Add(inputSystem);
         }
 
+        //TODO
         private void InitializeCameras()
         {
             Scene scene = _sceneManager.ActiveScene;
@@ -686,29 +653,6 @@ namespace GDGame
             GameObject cameraGO = null;
             Camera camera = null;
            
-            #region Static birds-eye camera
-            cameraGO = new GameObject(AppData.CAMERA_NAME_STATIC_BIRDS_EYE);
-            camera = cameraGO.AddComponent<Camera>();
-            camera.FieldOfView = MathHelper.ToRadians(80);
-            //ISRoT
-            cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
-            cameraGO.Transform.TranslateTo(Vector3.UnitY * 50);
-            scene.Add(cameraGO);
-            #endregion
-
-            #region Third-person camera
-            cameraGO = new GameObject(AppData.CAMERA_NAME_THIRD_PERSON);
-            camera = cameraGO.AddComponent<Camera>();
-
-            var thirdPersonController = new ThirdPersonController();
-            thirdPersonController.TargetName = AppData.PLAYER_NAME;
-            thirdPersonController.ShoulderOffset = 0;
-            thirdPersonController.FollowDistance = 50;
-            thirdPersonController.RotationDamping = 20;
-            cameraGO.AddComponent(thirdPersonController);
-            scene.Add(cameraGO);
-            #endregion
-
             #region simple camera
             cameraGO = new GameObject("simple camera");
             camera = cameraGO.AddComponent<Camera>();
@@ -717,49 +661,6 @@ namespace GDGame
             cameraGO.AddComponent<SimpleDriveController>();
             cameraGO.AddComponent<MouseYawPitchController>();
             scene.Add(cameraGO);
-            #endregion
-
-            #region First-person capsule + camera (parent/child)
-
-            // PARENT: physics + movement (feet at y = 0 here)
-            var parentGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON_PARENT);
-            parentGO.Layer = LayerMask.IgnoreRaycast;
-            parentGO.Transform.TranslateTo(new Vector3(0f, 10f, 15f));
-
-            // Capsule + rigidbody controller (kept upright internally)
-            var rigidBody = parentGO.AddComponent<RigidBody>();
-            var collider = parentGO.AddComponent<BoxCollider>();
-            //collider.Height = 2f;
-            //collider.Radius = 1f;
-            collider.Size = new Vector3(1.5f, 1, 1.5f);
-            collider.Center = Vector3.Zero;
-            var fpsController = parentGO.AddComponent<PhysicsWASDController>();
-            fpsController.MoveSpeed = 5f;
-            fpsController.Obj = parentGO;
-            
-            //fpsController.Acceleration = 50.0f;
-            //fpsController.GroundFriction = 2.0f;
-            //fpsController.JumpImpulse = 0f;
-            //fpsController.CapsuleRadius = 2f;
-            //fpsController.CapsuleHeight = 4f;
-            //fpsController.GroundCheckDistance = 5f;
-
-            // camera that can pitch + yaw without affecting the collider
-            cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
-            cameraGO.Transform.SetParent(parentGO.Transform);
-
-            // Local offset from feet → eye height
-            cameraGO.Transform.TranslateTo(new Vector3(0, 4, 0));
-            camera = cameraGO.AddComponent<Camera>();
-            camera.FieldOfView = MathHelper.ToRadians(80.0f);
-            var mouseLook = cameraGO.AddComponent<MouseYawPitchController>();
-   
-            // Add both objects to the scene so their components are updated
-            scene.Add(parentGO);
-            scene.Add(cameraGO);
-
-            // Make this the active camera
-            scene.ActiveCamera = camera;
             #endregion
 
             #region Curve camera
@@ -775,8 +676,6 @@ namespace GDGame
             scene.Add(cameraGO);
             #endregion
 
-            //replace with new SetActiveCamera that searches by string
-            //scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
             scene.SetActiveCamera("simple camera");
         }
 
@@ -950,72 +849,15 @@ namespace GDGame
             picker.MaxDistance = 5f;
             picker.HitTriggers = false;
 
-            // Optional custom formatting
             picker.Formatter = hit =>
             {
                 var go = hit.Body?.GameObject;
                 if (go == null)
                     return string.Empty;
                 _newMouseState = Mouse.GetState();
-                if (go.Name.Contains("photo"))
-                {
-                    ClickedItem(go);
-                    _oldMouseState = _newMouseState;
-                    return "A polaroid picture\n--\nRight Click to Examine\nLeft Click to Take";
-                }
-                if (go.Name.Contains("sock") || go.Name.Equals("shirt") || go.Name.Equals("pants"))
-                {
-                    ClickedItem(go);
-                    _oldMouseState = _newMouseState;
-                    return "My clothes piece\n--\nRight Click to Examine\nLeft Click to Take";
-                }
-                if (go.Name.Equals("note")) 
-                {
-                    ClickedItem(go);
-                    _oldMouseState = _newMouseState;
-                    return "My drunk note\n--\nRight Click to Examine\nLeft Click to Take";
-                }
-                if (go.Name.Contains("examine"))
-                {
-                    ClickedItem(go);
-                    _oldMouseState = _newMouseState;
-                }
-                if (go.Name.Equals("lock"))
-                {
-                    ClickedItem(go);
-                    _oldMouseState = _newMouseState;
-                    if (_hasKey)
-                        return "Lock\n--\nLeft Click to Unlock";
-                    else
-                        return "Lock\n--\nNeed a key to Unlock";
-                }
-                if (go.Name.Equals("plank"))
-                {
-                    if (_hasHammer)
-                    {
-                        ClickedItem(go);
-                        _oldMouseState = _newMouseState;
-                        return "Lock\n--\nLeft Click to Take Off";
-                    }
-                    else
-                        return "Lock\n--\nNeed a hammer to Take Off";
-                }
-
-                if (go.Name.Equals("key"))
-                {
-                    ClickedItem(go);
-                    _oldMouseState = _newMouseState;
-                    return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
-                }
-                if (go.Name.Equals("hammer"))
-                {
-                    ClickedItem(go);
-                    _oldMouseState = _newMouseState;
-                    return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
-                }
-
+                var str = HandleObjectHit(go);
                 _oldMouseState = _newMouseState;
-                return "";
+                return str;
             };
 
             _sceneManager.ActiveScene.Add(_uiReticleGO);
@@ -1025,8 +867,75 @@ namespace GDGame
         }
 
         /// <summary>
+        /// Handles all the objects hit by the raycast.
+        /// </summary>
+        /// <reused>Based on interaction logic developed in GCA Group Project</reused>
+        private string HandleObjectHit(GameObject go)
+        {
+            if (go.Name.Contains("photo"))
+            {
+                ClickedItem(go);
+                _oldMouseState = _newMouseState;
+                return "A polaroid picture\n--\nRight Click to Examine\nLeft Click to Take";
+            }
+            if (go.Name.Contains("sock") || go.Name.Equals("shirt") || go.Name.Equals("pants"))
+            {
+                ClickedItem(go);
+                _oldMouseState = _newMouseState;
+                return "My clothes piece\n--\nRight Click to Examine\nLeft Click to Take";
+            }
+            if (go.Name.Equals("note"))
+            {
+                ClickedItem(go);
+                _oldMouseState = _newMouseState;
+                return "My drunk note\n--\nRight Click to Examine\nLeft Click to Take";
+            }
+            if (go.Name.Contains("examine"))
+            {
+                ClickedItem(go);
+                _oldMouseState = _newMouseState;
+            }
+            if (go.Name.Equals("lock"))
+            {
+                ClickedItem(go);
+                _oldMouseState = _newMouseState;
+                if (_hasKey)
+                    return "Lock\n--\nLeft Click to Unlock";
+                else
+                    return "Lock\n--\nNeed a key to Unlock";
+            }
+            if (go.Name.Equals("plank"))
+            {
+                if (_hasHammer)
+                {
+                    ClickedItem(go);
+                    _oldMouseState = _newMouseState;
+                    return "Lock\n--\nLeft Click to Take Off";
+                }
+                else
+                    return "Lock\n--\nNeed a hammer to Take Off";
+            }
+
+            if (go.Name.Equals("key"))
+            {
+                ClickedItem(go);
+                _oldMouseState = _newMouseState;
+                return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
+            }
+            if (go.Name.Equals("hammer"))
+            {
+                ClickedItem(go);
+                _oldMouseState = _newMouseState;
+                return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
+            }
+
+            return "";
+        }
+
+        /// <summary>
         /// Toggles the the visibility of reticle UI element.
         /// </summary>
+        /// <reused>GCA Group Project</reused>
         private void SetReticleoVisible(bool state)
         {
             if (_uiReticleGO == null) return;
@@ -1035,26 +944,34 @@ namespace GDGame
                 ui.Enabled = state;
         }
 
-        private void dialogueVisible(string text)
+        /// <summary>
+        /// Changes the dialogue text and visibility.
+        /// </summary>
+        private void DialogueVisible(string text)
         {
             _textDialogue.TextProvider = () => text;
+
             if (text.Length < 1)
+                DialogueEnable(false);
+            else
+                DialogueEnable(true);
+        }
+
+        /// <summary>
+        /// Makes the dialogue UI elements enabled or disabled.
+        /// </summary>
+        private void DialogueEnable(bool state)
+        {
+            foreach (var renderable in _dialogueGO.GetComponents<UIRenderer>())
             {
-                foreach (var renderable in _dialogueGO.GetComponents<UIRenderer>())
-                {
-                    renderable.Enabled = false;
-                }
-            }
-            else             
-            {
-                foreach (var renderable in _dialogueGO.GetComponents<UIRenderer>())
-                {
-                    renderable.Enabled = true;
-                }
+                renderable.Enabled = state;
             }
         }
 
-        private void CreatDialogue()
+        /// <summary>
+        /// Creates the dialogue UI element.
+        /// </summary>
+        private void CreateDialogue()
         {
             int backBufferWidth = _graphics.PreferredBackBufferWidth;
             int backBufferHeight = _graphics.PreferredBackBufferHeight;
@@ -1074,12 +991,15 @@ namespace GDGame
 
             _textDialogue.LayerDepth = UILayer.MenuBack;
             _sceneManager.ActiveScene.Add(_dialogueGO);
-            dialogueVisible("");
+            DialogueVisible("");
         }
 
+        /// <summary>
+        /// Opens the door when the player has unlocked the lock and removed the planks.
+        /// </summary>
         private void openDoor()
         {
-            dialogueVisible("The End. Thanks for playing! Make sure to drink responsibility \nas you could end up in scarier situations!");
+            DialogueVisible("The End. Thanks for playing! Make sure to drink responsibility \nas you could end up in scarier situations!");
             var door = _sceneManager.ActiveScene.Find(g => g.Name.Equals("door"));
             door.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(10), 0));
             door.Transform.TranslateBy(new Vector3(0, 0, 0.2f));
@@ -1087,6 +1007,11 @@ namespace GDGame
             //end screen
         }
 
+        /// <summary>
+        /// Detects if an item was clicked and handles the logic.
+        /// 
+        /// It checks for left clicks for collecting items and right clicks for examining items.
+        /// </summary>
         private void ClickedItem(GameObject go)
         {
             var events = EngineContext.Instance.Events;
@@ -1182,47 +1107,47 @@ namespace GDGame
 
                         if (go.Name.Equals("note"))
                         {
-                            dialogueVisible("Why am I in a random room? Who was banging that door? \nThat is quite a weird note. No wonder my head hurts!");
+                            DialogueVisible("Why am I in a random room? Who was banging that door? \nThat is quite a weird note. No wonder my head hurts!");
                         }
                         else if (go.Name.Equals("sock1"))
                         {
-                            dialogueVisible("My clothes are everywhere, at least I found my precious sock!");
+                            DialogueVisible("My clothes are everywhere, at least I found my precious sock!");
                         }
                         else if (go.Name.Equals("sock2"))
                         {
-                            dialogueVisible("Well here is my less precious sock.");
+                            DialogueVisible("Well here is my less precious sock.");
                         }
                         else if (go.Name.Equals("shirt"))
                         {
-                            dialogueVisible("My green shirt and it doesn't look that dirty! I'll wear it.");
+                            DialogueVisible("My green shirt and it doesn't look that dirty! I'll wear it.");
                         }
                         else if (go.Name.Equals("pants"))
                         {
-                            dialogueVisible("My blue jeans! Seems like it gained another battle scar.");
+                            DialogueVisible("My blue jeans! Seems like it gained another battle scar.");
                         }
                         else if (go.Name.Equals("photo1"))
                         {
-                            dialogueVisible("That is the last thing I remember from last night.");
+                            DialogueVisible("That is the last thing I remember from last night.");
                         }
                         else if (go.Name.Equals("photo2"))
                         {
-                            dialogueVisible("I look pretty rough here, what is that circle for?");
+                            DialogueVisible("I look pretty rough here, what is that circle for?");
                         }
                         else if (go.Name.Equals("photo3"))
                         {
-                            dialogueVisible("Why is there someone behind me in this picture?");
+                            DialogueVisible("Why is there someone behind me in this picture?");
                         }
                         else if (go.Name.Equals("photo4"))
                         {
-                            dialogueVisible("Were they following me? At least, I am in a random room.");
+                            DialogueVisible("Were they following me? At least, I am in a random room.");
                         }
                         else if (go.Name.Equals("hammer"))
                         {
-                            dialogueVisible("I can use this hammer to get rid of the planks.");
+                            DialogueVisible("I can use this hammer to get rid of the planks.");
                         }
                         else if (go.Name.Equals("key"))
                         {
-                            dialogueVisible("I can use this key for the lock. I'm quite skilled when I'm drunk?");
+                            DialogueVisible("I can use this key for the lock. I'm quite skilled when I'm drunk?");
                         }
 
                         if (go.Name.Contains("photo") || go.Name.Contains("sock") || go.Name.Equals("pants") || go.Name.Equals("shirt") || go.Name.Equals("note") || go.Name.Equals("key") || go.Name.Equals("hammer"))
@@ -1258,7 +1183,7 @@ namespace GDGame
                         if (go.Name.Equals("pants") || go.Name.Equals("shirt"))
                             go.Transform.ScaleBy(Vector3.One * 2f);
 
-                        dialogueVisible("");
+                        DialogueVisible("");
                         SetReticleoVisible(true);
                         _isExamining = false;
                     }
@@ -1266,6 +1191,10 @@ namespace GDGame
 
             }
         }
+
+        /// <summary>
+        /// Places the item 2 units in front of the camera and rotates it to face the camera.
+        /// </summary>
         void PlaceAndFaceItem(GameObject item, GameObject cam)
         {
             // Position
@@ -1309,6 +1238,7 @@ namespace GDGame
 
             return gameObject;
         }
+
         protected override void Update(GameTime gameTime)
         {
             //call time update
@@ -1465,36 +1395,10 @@ namespace GDGame
 
         }
         #endregion
-      
-        private void DemoCollidableModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
-        {
-            var go = new GameObject("test");
-            go.Transform.TranslateTo(position);
-            go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-            go.Transform.ScaleTo(scale);
 
-            go.Layer = LayerMask.Interactables;
-
-            var model = _modelDictionary.Get("monkey1");
-            var texture = _textureDictionary.Get("mona lisa");
-            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-            go.AddComponent(meshFilter);
-
-            var meshRenderer = go.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicLit;
-            meshRenderer.Overrides.MainTexture = texture;
-            _sceneManager.ActiveScene.Add(go);
-
-            // Add box collider (1x1x1 cube)
-            var collider = go.AddComponent<SphereCollider>();
-            collider.Diameter = scale.Length();
-
-            // Add rigidbody (Dynamic so it falls)
-            var rigidBody = go.AddComponent<RigidBody>();
-            rigidBody.BodyType = BodyType.Dynamic;
-            rigidBody.Mass = 1.0f;
-        }
-
+        /// <summary>
+        /// Uses CollidableModel to spawn models in the scene with specific positions, rotations and scales.
+        /// </summary>
         private void spawnModels()
         {
             List<String> list = ["hammer", "key", "lock", "plank", "plank"];
@@ -1506,8 +1410,11 @@ namespace GDGame
             {
                 CollidableModel(list[i], positions[i], rotations[i], scale[i]);
             }
-        } 
+        }
 
+        /// <summary>
+        /// Make a collidable model with box collider and rigidbody
+        /// </summary>
         private void CollidableModel(String name, Vector3 position, Vector3 rotation, Vector3 scale)
         {
             var go = new GameObject(name);
@@ -1547,24 +1454,17 @@ namespace GDGame
         {
             // Get new state
             _newKBState = Keyboard.GetState();
-            //DemoEventPublish();
-            //DemoCameraSwitch();
             DemoToggleFullscreen();
-            //DemoAudioSystem();
-            //DemoOrchestrationSystem();
-            //DemoImpulsePublish();
             //To allow object editing in scene
             //ObjectEditor("door");
 
-
-            _currentHealth--;
-
-            // Store old state (allows us to do was pressed type checks)
             _oldKBState = _newKBState;
         }
 
 
-        //allows moving and rotating object in scene
+        /// <summary>
+        /// Editor to move objects in the game space for testing purposes and placement.
+        /// </summary>
         private void ObjectEditor(String item)
         {
             GameObject go = _sceneManager.ActiveScene.Find(go => go.Name.Equals(item));
@@ -1604,6 +1504,9 @@ namespace GDGame
             }
         }
 
+        /// <summary>
+        /// Creates an orchestration for the intro sequence // maybe add more orchestrations.
+        /// </summary>
         private void IntroOrchestrationSystem()
         {
             var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>().Orchestrator;
@@ -1615,88 +1518,22 @@ namespace GDGame
 
                 .Publish(new PlaySfxEvent("door knock", _sfxVolume, false, null))
                 .WaitSeconds(1)
-                .Do((i) => { dialogueVisible("Who's banging the door?"); })
+                .Do((i) => { DialogueVisible("Who's banging the door?"); })
                 .Publish(new PlaySfxEvent("selftalk", _sfxVolume, false, null))
                 .WaitSeconds(3)
                 .Publish(new PlaySfxEvent("headache", _sfxVolume, false, null))
-                .Do((i) => { dialogueVisible("My head hurts so much what happened?"); })
+                .Do((i) => { DialogueVisible("My head hurts so much what happened?"); })
                 .WaitSeconds(5)
-                .Do((i) => { dialogueVisible("This is not my house?"); })
+                .Do((i) => { DialogueVisible("This is not my house?"); })
                 .WaitSeconds(3)
                 .Publish(new PlayMusicEvent("confused music", _musicVolume, 8))
-                .Do((i) => { dialogueVisible("My head!!!"); })
+                .Do((i) => { DialogueVisible("My head!!!"); })
                 .Publish(new PlaySfxEvent("headache", _sfxVolume, false, null))
                 .WaitSeconds(3)
-                .Do((i) => { dialogueVisible("I need to get my stuff and leave this place."); })
+                .Do((i) => { DialogueVisible("I need to get my stuff and leave this place."); })
                 .WaitSeconds(3)
-                .Do((i) => { dialogueVisible(""); })
+                .Do((i) => { DialogueVisible(""); })
                 .Register();
-        }
-
-        private void DemoOrchestrationSystem()
-        {
-            var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>().Orchestrator;
-
-            //bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
-            //if (isPressed)
-            //{
-            //    orchestrator.Build("my first sequence")
-            //        .WaitSeconds(2)
-            //        .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))
-            //        .WaitSeconds(2)
-            //        .Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1, false, null))
-            //        .Register();
-
-            //    orchestrator.Start("my first sequence", _sceneManager.ActiveScene, EngineContext.Instance);
-            //}
-
-            //bool isIPressed = _newKBState.IsKeyDown(Keys.I) && !_oldKBState.IsKeyDown(Keys.I);
-            //if (isIPressed)
-            //    orchestrator.Pause("my first sequence");
-
-            //bool isPPressed = _newKBState.IsKeyDown(Keys.P) && !_oldKBState.IsKeyDown(Keys.P);
-            //if (isPPressed)
-            //    orchestrator.Resume("my first sequence");
-        }
-
-        private void DemoAudioSystem()
-        {
-            var events = EngineContext.Instance.Events;
-
-            //TODO - Exercise
-            bool isD3Pressed = _newKBState.IsKeyDown(Keys.D3) && !_oldKBState.IsKeyDown(Keys.D3);
-            if (isD3Pressed)
-            {
-                //events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",1, false, null));
-            }
-
-            bool isD4Pressed = _newKBState.IsKeyDown(Keys.D4) && !_oldKBState.IsKeyDown(Keys.D4);
-            if (isD4Pressed)
-            {
-                //events.Publish(new PlayMusicEvent("secret_door", 1, 8));
-            }
-
-            bool isD5Pressed = _newKBState.IsKeyDown(Keys.D5) && !_oldKBState.IsKeyDown(Keys.D5);
-            if (isD5Pressed)
-            {
-                events.Publish(new StopMusicEvent(4));
-            }
-
-            bool isD6Pressed = _newKBState.IsKeyDown(Keys.D6) && !_oldKBState.IsKeyDown(Keys.D6);
-            if (isD6Pressed)
-            {
-                events.Publish(new FadeChannelEvent(AudioMixer.AudioChannel.Master, 0.1f, 4));
-            }
-
-            bool isD7Pressed = _newKBState.IsKeyDown(Keys.D7) && !_oldKBState.IsKeyDown(Keys.D7);
-            if (isD7Pressed)
-            {
-                //expensive and crude => move to Component::Start()
-                var go = _sceneManager.ActiveScene.Find(go => go.Name.Equals(AppData.PLAYER_NAME));
-                Transform emitterTransform = go.Transform;
-
-                //events.Publish(new PlaySfxEvent("hand_gun1", 1, true, emitterTransform));
-            }
         }
 
         private void DemoToggleFullscreen()
@@ -1704,71 +1541,6 @@ namespace GDGame
             bool togglePressed = _newKBState.IsKeyDown(Keys.F5) && !_oldKBState.IsKeyDown(Keys.F5);
             if (togglePressed)
                 _graphics.ToggleFullScreen();
-        }
-
-        private void DemoCameraSwitch()
-        {
-            var events = EngineContext.Instance.Events;
-
-            bool isFirst = _newKBState.IsKeyDown(Keys.D1) && !_oldKBState.IsKeyDown(Keys.D1);
-            if (isFirst)
-            {
-                events.Post(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",1, false, null));
-            }
-
-            bool isThird = _newKBState.IsKeyDown(Keys.D2) && !_oldKBState.IsKeyDown(Keys.D2);
-            if (isThird)
-            {
-                events.Post(new CameraEvent(AppData.CAMERA_NAME_THIRD_PERSON));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1", 1, false, null));
-            }
-
-            bool simple = _newKBState.IsKeyDown(Keys.D3) && !_oldKBState.IsKeyDown(Keys.D3);
-            if (simple)
-            {
-                events.Post(new CameraEvent("simple camera"));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",1, false, null));
-            }
-        }
-
-        private void DemoEventPublish()
-        {
-            // F2: publish a test DamageEvent
-            if (_newKBState.IsKeyDown(Keys.F6) && !_oldKBState.IsKeyDown(Keys.F6))
-            {
-                // Simple “debug” damage example
-                var hitPos = new Vector3(0, 5, 0); //some fake position
-                _damageAmount++;
-
-                var damageEvent = new DamageEvent(_damageAmount, DamageEvent.DamageType.Strength,
-                    "Plasma rifle", AppData.PLAYER_NAME, hitPos, false);
-
-                EngineContext.Instance.Events.Post(damageEvent);
-            }
-
-            // Raise inventory event
-            if (_newKBState.IsKeyDown(Keys.E) && !_oldKBState.IsKeyDown(Keys.E))
-            {
-                var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
-                inventoryEvent.ItemType = ItemType.Weapon;
-                inventoryEvent.Value = 10;
-                EngineContext.Instance.Events.Publish(inventoryEvent);
-            }
-
-            //if (_newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L))
-            //{
-            //    var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
-            //    inventoryEvent.ItemType = ItemType.Lore;
-            //    inventoryEvent.Value = 0;
-            //    EngineContext.Instance.Events.Publish(inventoryEvent);
-            //}
-
-            if (_newKBState.IsKeyDown(Keys.M) && !_oldKBState.IsKeyDown(Keys.M))
-            {
-                // EngineContext.Instance.Messages.Post(new PlayerDamageEvent(45, DamageType.Strength));
-                //EngineContext.Instance.Messages.PublishImmediate(new PlayerDamageEvent(45, DamageType.Strength));
-            }
         }
 
         private void DemoLoadFromJSON()
@@ -1779,36 +1551,9 @@ namespace GDGame
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
         }
 
-        private void DemoCollidablePrimitive(Vector3 position, Vector3 scale, Vector3 rotateDegrees)
-        {
-            GameObject gameObject = null;
-            MeshFilter meshFilter = null;
-            MeshRenderer meshRenderer = null;
-
-            gameObject = new GameObject("test crate textured cube");
-            gameObject.Transform.TranslateTo(position);
-            gameObject.Transform.ScaleTo(scale * 0.5f);
-            gameObject.Transform.RotateEulerBy(rotateDegrees * MathHelper.Pi / 180f);
-
-
-            meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicLit; //enable lighting for the crate
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
-
-            var collider = gameObject.AddComponent<BoxCollider>();
-            collider.Size = scale;  // Collider is FULL size
-            collider.Center = Vector3.Zero;
-
-            var rb = gameObject.AddComponent<RigidBody>();
-            rb.Mass = 1.0f;
-            rb.BodyType = BodyType.Dynamic;
-
-            _sceneManager.ActiveScene.Add(gameObject);
-        }
-
+        /// <summary>
+        /// Adds polaroid photo objects to the scene with specific positions and rotations using the alpha cutout material
+        /// </summary>
         private void AddPolaroids()
         {
             List<Vector3> positions = [new Vector3(-16.3f, 1, 7.1f), new Vector3(-7f, 1.1f, 3.4f), new Vector3(-8.3f, 0.9f, 12.5f), new Vector3(-15.3f, 1.9f, 18.8f)];
@@ -1846,6 +1591,9 @@ namespace GDGame
             }
         }
 
+        /// <summary>
+        /// adds clothes objects to the scene with specific positions and rotations using the alpha cutout material
+        /// </summary>
         private void AddClothes()
         {
             List<String> names = ["sock1", "sock2", "shirt", "pants"];
@@ -1888,6 +1636,10 @@ namespace GDGame
 
         }
 
+
+        /// <summary>
+        /// Adds a note object to the scene using the alpha cutout material.
+        /// </summary>
         private void AddNote()
         {
             var go = new GameObject("note");
