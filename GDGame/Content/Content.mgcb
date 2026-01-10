@@ -32,6 +32,13 @@
 /processorParam:TextureFormat=Compressed
 /build:Assets/Fonts/menufont.spritefont
 
+#begin Assets/Fonts/menufontsmall.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Assets/Fonts/menufontsmall.spritefont
+
 #begin Assets/Fonts/perfStats.spritefont
 /importer:FontDescriptionImporter
 /processor:LocalizedFontProcessor
@@ -453,6 +460,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Assets/Textures/UI/Backgrounds/dialogue.png
+
+#begin Assets/Textures/UI/Backgrounds/gameUi.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/Textures/UI/Backgrounds/gameUi.png
 
 #begin Assets/Textures/UI/Backgrounds/logo.png
 /importer:TextureImporter

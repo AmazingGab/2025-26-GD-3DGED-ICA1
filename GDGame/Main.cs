@@ -58,7 +58,6 @@ namespace GDGame
         // LayerMask used to filter which collisions we care about in debug
         private LayerMask _collisionDebugMask = LayerMask.All;
         private SceneManager _sceneManager;
-        private float _currentHealth = 100;
         private MenuManager _menuManager;
         private UIDebugInfo _debugRenderer;
         private MouseState _newMouseState;
@@ -79,6 +78,9 @@ namespace GDGame
         private bool _hasKey;
         private bool _hasHammer;
         private int _unlockValue;
+        private GameObject _gameUIGO;
+        private UIText _insightCounter;
+        private UIText _objectiveText;
 
         #endregion
 
@@ -144,9 +146,6 @@ namespace GDGame
 
             // Main menu
             InitializeMenuManager();
-    
-            // Set win/lose conditions
-            SetWinConditions();
 
             // Set pause and show menu
             SetPauseShowMenu();
@@ -165,6 +164,7 @@ namespace GDGame
             //preloading items
             LoadEmitters();
             CreateDialogue();
+            CreateGameUI();
             GameOrchestrationSystem();
 
             _sceneManager.Paused = true;
@@ -209,7 +209,8 @@ namespace GDGame
             EngineContext.Instance.Events.Subscribe<GamePauseChangedEvent>(e =>
             {
                 bool paused = e.IsPaused;
-
+                IsMouseVisible = paused;
+                GameUIVisible(!paused);
                 _sceneManager.ActiveScene.GetSystem<PhysicsSystem>()?.SetPaused(paused);
                 _sceneManager.ActiveScene.GetSystem<PhysicsDebugSystem>()?.SetPaused(paused);
                 _sceneManager.ActiveScene.GetSystem<GameStateSystem>()?.SetPaused(paused);
@@ -257,6 +258,7 @@ namespace GDGame
                 _menuManager.HideMenus();
                 var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>()?.Orchestrator;
                 orchestrator.Start("intro", _sceneManager.ActiveScene, EngineContext.Instance);
+                IsMouseVisible = false;
             };
 
             _menuManager.ExitRequested += () =>
@@ -668,50 +670,11 @@ namespace GDGame
             cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(90), MathHelper.ToRadians(90), 0));
             cameraGO.Transform.TranslateTo(new Vector3(-1f, 2f, 2.2f));
             camera = cameraGO.AddComponent<Camera>();
-            //var curveController = cameraGO.AddComponent<CurveController>();
-            //curveController.PositionCurve = BuildCameraPositionCurve(CurveLoopType.Oscillate);
-            //curveController.TargetCurve = BuildCameraTargetCurve(CurveLoopType.Constant);
-            //curveController.Duration = 10;
             scene.Add(cameraGO);
             #endregion
 
             scene.SetActiveCamera(AppData.CAMERA_NAME_CUTSCENE);
-            //scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
         }
-
-        private AnimationCurve3D BuildCameraPositionCurve(CurveLoopType curveLoopType)
-        {
-            var curve = new AnimationCurve3D(curveLoopType);
-
-            // start
-            curve.AddKey(new Vector3(-2f, 4f, 3f), 0);
-
-            // moving inward, slight rise
-            curve.AddKey(new Vector3(-10, 10, 30), 0.25f);
-
-            // closest to origin (single “turn”)
-            curve.AddKey(new Vector3(0, 10, 30), 0.5f);
-
-            // heading back out
-            curve.AddKey(new Vector3(10, 10, 40), 0.75f);
-
-            // end
-            curve.AddKey(new Vector3(20, 10, 40), 1);
-
-            return curve;
-        }
-
-        private AnimationCurve3D BuildCameraTargetCurve(CurveLoopType curveLoopType)
-        {
-            var curve = new AnimationCurve3D(curveLoopType);
-
-            // All points “in or around” origin, y ≈ 5 so we look slightly down from y=10–12.
-            curve.AddKey(new Vector3(-5,0,0), 0);
-            curve.AddKey(new Vector3(5,0,0), 1);
-
-            return curve;
-        }
-
 
         /// <summary>
         /// Add parent root at origin to rotate the sky
@@ -863,7 +826,7 @@ namespace GDGame
             _sceneManager.ActiveScene.Add(_uiReticleGO);
 
             // Hide mouse since reticle will take its place
-            IsMouseVisible = false;
+            //IsMouseVisible = false;
         }
 
         /// <summary>
@@ -910,23 +873,23 @@ namespace GDGame
                 {
                     ClickedItem(go);
                     _oldMouseState = _newMouseState;
-                    return "Lock\n--\nLeft Click to Take Off";
+                    return "Plank\n--\nLeft Click to Take Off";
                 }
                 else
-                    return "Lock\n--\nNeed a hammer to Take Off";
+                    return "Plank\n--\nNeed a hammer to Take Off";
             }
 
             if (go.Name.Equals("key"))
             {
                 ClickedItem(go);
                 _oldMouseState = _newMouseState;
-                return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
+                return "The Key\n--\nRight Click to Examine\nLeft Click to Take";
             }
             if (go.Name.Equals("hammer"))
             {
                 ClickedItem(go);
                 _oldMouseState = _newMouseState;
-                return "The KEY\n--\nRight Click to Examine\nLeft Click to Take";
+                return "The Hammer\n--\nRight Click to Examine\nLeft Click to Take";
             }
 
             return "";
@@ -1001,12 +964,7 @@ namespace GDGame
         {
             var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>()?.Orchestrator;
             orchestrator.Start("outro", _sceneManager.ActiveScene, EngineContext.Instance);
-            //DialogueVisible("The End. Thanks for playing! Make sure to drink responsibility \nas you could end up in scarier situations!");
-            //var door = _sceneManager.ActiveScene.Find(g => g.Name.Equals("door"));
-            //door.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(10), 0));
-            //door.Transform.TranslateBy(new Vector3(0, 0, 0.2f));
-            //wait
-            //end screen
+            GameUIVisible(false);
         }
 
         /// <summary>
@@ -1030,18 +988,21 @@ namespace GDGame
                         events.Publish(new PlayMusicEvent("calm music", _musicVolume, 1));
                         _currentMusic = "calm music";
                         _insight += 4;
+                        SetObjective("FIND MORE INSIGHTS");
                     }
 
 
                     if (go.Name.Contains("photo") || go.Name.Contains("sock") || go.Name.Equals("pants") || go.Name.Equals("shirt") || go.Name.Equals("note"))
                     {
                         events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
+                        SetInsight();
                         _insight++;
                         if (_insight < 10)
                             insightItems[_insight - 1].Enabled = true;
 
                         if (_insight > 12)
                         {
+                            SetObjective("FIND TOOLS TO UNLOCK DOOR");
                             var key = _sceneManager.ActiveScene.Find(g => g.Name.Equals("key"));
                             key.Enabled = true;
                             var hammer = _sceneManager.ActiveScene.Find(g => g.Name.Equals("hammer"));
@@ -1453,6 +1414,7 @@ namespace GDGame
             int i;
             //wakeup, intro camera, main camera
             orchestrator.Build("intro")
+                .Do((i) => { GameUIVisible(false); })
                 .WaitSeconds(2)
                 .Publish(new PlaySfxEvent("door knock", _sfxVolume, false, null))
                 .WaitSeconds(1)
@@ -1479,7 +1441,7 @@ namespace GDGame
                 .Do((i) => { DialogueVisible("I need to get my stuff and leave this place."); })
                 .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))
                 .WaitSeconds(3)
-                .Do((i) => { DialogueVisible(""); })
+                .Do((i) => { DialogueVisible(""); GameUIVisible(true); })
                 .Register();
 
             var door = _sceneManager.ActiveScene.Find(g => g.Name.Equals("door"));
@@ -1520,6 +1482,56 @@ namespace GDGame
             //load multiple models
             foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName))
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
+        }
+
+        /// <summary>
+        /// Sets the visibility of the game ui visibility
+        /// </summary>
+        private void GameUIVisible(bool state)
+        {
+            foreach (var renderable in _gameUIGO.GetComponents<UIRenderer>())
+            {
+                renderable.Enabled = state;
+            }
+        }
+
+        private void SetObjective(String s)
+        {
+            _objectiveText.TextProvider = () => s;
+        }
+
+        private void SetInsight()
+        {
+            _insightCounter.TextProvider = () => (_insight-4)+"/9";
+        } 
+
+        /// <summary>
+        /// Creates objective and insight counter
+        /// </summary>
+        private void CreateGameUI()
+        {
+            _gameUIGO = new GameObject("gameUI");
+            var texture = _gameUIGO.AddComponent<UITexture>();
+            texture.Texture = _textureDictionary.Get("game-ui");
+            texture.Size = new Vector2(200, 100);
+            texture.Position = new Vector2(5, 200);
+
+            _insightCounter = _gameUIGO.AddComponent<UIText>();
+            _insightCounter.Font = _fontDictionary.Get("menufont");
+            _insightCounter.FallbackColor = new Color(255, 255, 255);
+            _insightCounter.PositionProvider = () => new Vector2(100, 235);
+            _insightCounter.TextProvider = () => "0/9";
+            _insightCounter.LayerDepth = UILayer.MenuBack;
+
+            _objectiveText = _gameUIGO.AddComponent<UIText>();
+            _objectiveText.Font = _fontDictionary.Get("menufontsmall");
+            _objectiveText.FallbackColor = new Color(255, 255, 255);
+            _objectiveText.PositionProvider = () => new Vector2(15, 170);
+            _objectiveText.TextProvider = () => "READ THE NOTE";
+            _objectiveText.LayerDepth = UILayer.MenuBack;
+
+            _sceneManager.ActiveScene.Add(_gameUIGO);
+            GameUIVisible(false);
         }
 
         /// <summary>

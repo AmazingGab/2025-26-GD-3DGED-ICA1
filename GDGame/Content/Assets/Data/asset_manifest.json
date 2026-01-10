@@ -4,20 +4,24 @@
     "author": "NMCG",
     "asset": "Game assets - Level 1 - Forbidden Planet"
   },
-  "fonts": [
-    {
-      "name": "perf_stats_font",
-      "contentPath": "assets/fonts/perfStats"
-    },
-    {
-      "name": "mouse_reticle_font",
-      "contentPath": "assets/fonts/uiReticleText"
-    },
-    {
-      "name": "menufont",
-      "contentPath": "assets/fonts/menufont"
-    }
-  ],
+    "fonts": [
+        {
+            "name": "perf_stats_font",
+            "contentPath": "assets/fonts/perfStats"
+        },
+        {
+            "name": "mouse_reticle_font",
+            "contentPath": "assets/fonts/uiReticleText"
+        },
+        {
+            "name": "menufontsmall",
+            "contentPath": "assets/fonts/menufontsmall"
+        },
+        {
+            "name": "menufont",
+            "contentPath": "assets/fonts/menufont"
+        }
+    ],
     "textures": [
         {
             "name": "photo1",
@@ -113,6 +117,10 @@
         {
             "name": "controls",
             "contentPath": "assets/textures/ui/backgrounds/controls"
+        },
+        {
+            "name": "game-ui",
+            "contentPath": "assets/textures/ui/backgrounds/gameUi"
         },
         {
             "name": "crosshair",
