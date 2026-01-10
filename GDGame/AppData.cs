@@ -63,11 +63,8 @@ namespace GDGame
         #endregion
 
         #region Cameras
-        public static readonly string CAMERA_NAME_RAIL = "Rail";
-        public static readonly string CAMERA_NAME_THIRD_PERSON = "Third person";
+        public static readonly string CAMERA_NAME_CUTSCENE = "Cutscene";
         public static readonly string CAMERA_NAME_FIRST_PERSON = "First person";
-        public static readonly string CAMERA_NAME_PIP = "PIP";
-        public static readonly string CAMERA_NAME_STATIC_BIRDS_EYE = "Static birds-eye";
         public static readonly string CAMERA_NAME_INTRO_CURVE = "Intro curve";
         public static readonly string CAMERA_IMPULSE_CHANNEL = "camera/impulse";
         public static readonly string CAMERA_NAME_FIRST_PERSON_PARENT = CAMERA_NAME_FIRST_PERSON + "parent";

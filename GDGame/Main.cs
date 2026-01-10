@@ -165,7 +165,7 @@ namespace GDGame
             //preloading items
             LoadEmitters();
             CreateDialogue();
-            IntroOrchestrationSystem();
+            GameOrchestrationSystem();
 
             _sceneManager.Paused = true;
             base.Initialize();
@@ -654,29 +654,29 @@ namespace GDGame
             Camera camera = null;
            
             #region simple camera
-            cameraGO = new GameObject("simple camera");
+            cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
             camera = cameraGO.AddComponent<Camera>();
-            cameraGO.Transform.TranslateTo(new Vector3(0f, 4f, 0));
+            cameraGO.Transform.TranslateTo(new Vector3(-2f, 4f, 3));
 
             cameraGO.AddComponent<SimpleDriveController>();
             cameraGO.AddComponent<MouseYawPitchController>();
             scene.Add(cameraGO);
             #endregion
 
-            #region Curve camera
-            cameraGO = new GameObject(AppData.CAMERA_NAME_INTRO_CURVE);
-            cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
+            #region Camera Cutscene
+            cameraGO = new GameObject(AppData.CAMERA_NAME_CUTSCENE);
+            cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(90), MathHelper.ToRadians(90), 0));
+            cameraGO.Transform.TranslateTo(new Vector3(-1f, 2f, 2.2f));
             camera = cameraGO.AddComponent<Camera>();
-            camera.FieldOfView = MathHelper.ToRadians(80);
-
-            var curveController = cameraGO.AddComponent<CurveController>();
-            curveController.PositionCurve = BuildCameraPositionCurve(CurveLoopType.Oscillate);
-            curveController.TargetCurve = BuildCameraTargetCurve(CurveLoopType.Constant);
-            curveController.Duration = 10;
+            //var curveController = cameraGO.AddComponent<CurveController>();
+            //curveController.PositionCurve = BuildCameraPositionCurve(CurveLoopType.Oscillate);
+            //curveController.TargetCurve = BuildCameraTargetCurve(CurveLoopType.Constant);
+            //curveController.Duration = 10;
             scene.Add(cameraGO);
             #endregion
 
-            scene.SetActiveCamera("simple camera");
+            scene.SetActiveCamera(AppData.CAMERA_NAME_CUTSCENE);
+            //scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
         }
 
         private AnimationCurve3D BuildCameraPositionCurve(CurveLoopType curveLoopType)
@@ -684,7 +684,7 @@ namespace GDGame
             var curve = new AnimationCurve3D(curveLoopType);
 
             // start
-            curve.AddKey(new Vector3(-20, 10, 40), 0);
+            curve.AddKey(new Vector3(-2f, 4f, 3f), 0);
 
             // moving inward, slight rise
             curve.AddKey(new Vector3(-10, 10, 30), 0.25f);
@@ -999,10 +999,12 @@ namespace GDGame
         /// </summary>
         private void openDoor()
         {
-            DialogueVisible("The End. Thanks for playing! Make sure to drink responsibility \nas you could end up in scarier situations!");
-            var door = _sceneManager.ActiveScene.Find(g => g.Name.Equals("door"));
-            door.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(10), 0));
-            door.Transform.TranslateBy(new Vector3(0, 0, 0.2f));
+            var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>()?.Orchestrator;
+            orchestrator.Start("outro", _sceneManager.ActiveScene, EngineContext.Instance);
+            //DialogueVisible("The End. Thanks for playing! Make sure to drink responsibility \nas you could end up in scarier situations!");
+            //var door = _sceneManager.ActiveScene.Find(g => g.Name.Equals("door"));
+            //door.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(10), 0));
+            //door.Transform.TranslateBy(new Vector3(0, 0, 0.2f));
             //wait
             //end screen
         }
@@ -1093,7 +1095,7 @@ namespace GDGame
             if (_newMouseState.RightButton == ButtonState.Pressed && _oldMouseState.RightButton == ButtonState.Released)
             {
 
-                var plr = _sceneManager.ActiveScene.Find(go => go.Name.Equals("simple camera"));
+                var plr = _sceneManager.ActiveScene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_FIRST_PERSON));
                 var look = plr.GetComponent<MouseYawPitchController>();
                 var move = plr.GetComponent<SimpleDriveController>();
                 if (!_isExamining) 
@@ -1332,70 +1334,6 @@ namespace GDGame
 
         #endregion
 
-        #region Demo - Game State
-        private void SetWinConditions()
-        {
-            var gameStateSystem = _sceneManager.ActiveScene.GetSystem<GameStateSystem>();
-
-            // Value providers (Strategy pattern via delegates)
-            Func<float> healthProvider = () =>
-            {
-                //get the player and access the player's health/speed/other variable
-                return _currentHealth;
-            };
-
-            // Delegate for time
-            Func<float> timeProvider = () =>
-            {
-                return (float)Time.RealtimeSinceStartupSecs;
-            };
-
-            // Lose condition: health < 10 AND time > 60
-            IGameCondition loseCondition =
-                GameConditions.FromPredicate("all enemies visited", checkEnemiesVisited);
-
-            IGameCondition winCondition =
-            GameConditions.FromPredicate("reached gate", checkReachedGate);
-
-            // Configure GameStateSystem (no win condition yet)
-            gameStateSystem.ConfigureConditions(winCondition, loseCondition);
-            gameStateSystem.StateChanged += HandleGameStateChange;
-        }
-
-        private bool checkReachedGate()
-        {
-            // we could pause the game on a win
-            //Time.TimeScale = 0;
-            return false;
-        }
-
-        private bool checkEnemiesVisited()
-        {
-            //get inventory and eval using boolean if all enemies visited;
-            return false;
-        }
-
-        private void HandleGameStateChange(GameOutcomeState oldState, GameOutcomeState newState)
-        {
-            System.Diagnostics.Debug.WriteLine($"Old state was {oldState} and new state is {newState}");
-
-            if (newState == GameOutcomeState.Lost)
-            {
-                System.Diagnostics.Debug.WriteLine("You lost!");
-                //play sound
-                //reset player
-                //load next level
-                //we decide what losing looks like here!
-                //Exit();
-            }
-            else if (newState == GameOutcomeState.Won)
-            {
-                System.Diagnostics.Debug.WriteLine("You win!");
-            }
-
-        }
-        #endregion
-
         /// <summary>
         /// Uses CollidableModel to spawn models in the scene with specific positions, rotations and scales.
         /// </summary>
@@ -1507,33 +1445,66 @@ namespace GDGame
         /// <summary>
         /// Creates an orchestration for the intro sequence // maybe add more orchestrations.
         /// </summary>
-        private void IntroOrchestrationSystem()
+        private void GameOrchestrationSystem()
         {
             var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>().Orchestrator;
+            var cam = _sceneManager.ActiveScene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_CUTSCENE));
             //needed to make orchestration work
             int i;
             //wakeup, intro camera, main camera
             orchestrator.Build("intro")
                 .WaitSeconds(2)
-
                 .Publish(new PlaySfxEvent("door knock", _sfxVolume, false, null))
                 .WaitSeconds(1)
                 .Do((i) => { DialogueVisible("Who's banging the door?"); })
                 .Publish(new PlaySfxEvent("selftalk", _sfxVolume, false, null))
-                .WaitSeconds(3)
+                .RotateEulerTo(cam.Transform, new Vector3(0, MathHelper.ToRadians(90), 0), 2f)
+                .MoveTo(cam.Transform, new Vector3(-2, 3, 2.2f), 1f)
+                //.WaitSeconds(1)
+               
                 .Publish(new PlaySfxEvent("headache", _sfxVolume, false, null))
                 .Do((i) => { DialogueVisible("My head hurts so much what happened?"); })
-                .WaitSeconds(5)
+                .RotateEulerTo(cam.Transform, new Vector3(0, MathHelper.ToRadians(180), 0), 1f)
+                .MoveTo(cam.Transform, new Vector3(-2f, 4f, 3f), 2f)
+                .RotateEulerTo(cam.Transform, new Vector3(MathHelper.ToRadians(-10), MathHelper.ToRadians(130), 0), 3f)
                 .Do((i) => { DialogueVisible("This is not my house?"); })
-                .WaitSeconds(3)
-                .Publish(new PlayMusicEvent("confused music", _musicVolume, 8))
+                //.WaitSeconds(1)
+                .RotateEulerTo(cam.Transform, new Vector3(MathHelper.ToRadians(-60), MathHelper.ToRadians(210), 0), 2.4f)
                 .Do((i) => { DialogueVisible("My head!!!"); })
                 .Publish(new PlaySfxEvent("headache", _sfxVolume, false, null))
-                .WaitSeconds(3)
+                .WaitSeconds(2)
+                .Publish(new PlayMusicEvent("confused music", _musicVolume, 8))
+                .RotateEulerTo(cam.Transform, new Vector3(0, MathHelper.ToRadians(180), 0), 3f)
+                .WaitSeconds(2)
                 .Do((i) => { DialogueVisible("I need to get my stuff and leave this place."); })
+                .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))
                 .WaitSeconds(3)
                 .Do((i) => { DialogueVisible(""); })
                 .Register();
+
+            var door = _sceneManager.ActiveScene.Find(g => g.Name.Equals("door"));
+
+            orchestrator.Build("outro")
+                .Publish(new CameraEvent(AppData.CAMERA_NAME_CUTSCENE))
+                //.RotateEulerTo(cam.Transform, new Vector3(0, MathHelper.ToRadians(180), 0), 0.01f)
+                //.MoveTo(cam.Transform, new Vector3(-2f, 4f, 3f), 0.01f)
+                .MoveTo(cam.Transform, new Vector3(-3.4f, 4, 4f), 1f)
+                .Do((i) => { DialogueVisible("I can finally leave this place."); })
+                .MoveTo(door.Transform, new Vector3(-3.9f, 2.2f, 13.8f), .1f)
+                .RotateEulerTo(door.Transform, new Vector3(0, MathHelper.ToRadians(10), 0), 2f)
+                .MoveTo(cam.Transform, new Vector3(-3.4f, 4, 8f), 2f)
+                .Do((i) => { DialogueVisible("I hope the person who owns this place doesn't mind"); })
+                .WaitSeconds(2)
+                .Do((i) => { DialogueVisible("I should really drink responsibility.."); })
+                .MoveTo(cam.Transform, new Vector3(-3.5f, 4, 11f), 2f)
+                .RotateEulerTo(cam.Transform, new Vector3(MathHelper.ToRadians(-30), MathHelper.ToRadians(170), 0), 1f)
+                .Do((i) => { DialogueVisible("THE END. Please drink responsibility! You can \nend up in scarier/dangerous situations!"); })
+                .WaitSeconds(8)
+                .Do((i) => { DialogueVisible("Goodbye! Thanks for playing!"); })
+                .WaitSeconds(3)
+                .Do((i) => { Exit(); })
+                .Register();
+
         }
 
         private void DemoToggleFullscreen()
