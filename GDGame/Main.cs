@@ -63,24 +63,20 @@ namespace GDGame
         private MouseState _newMouseState;
         private MouseState _oldMouseState;
 
-        private int _insight = 0;
         private List<GameObject> insightItems = [];
         private GameObject _dialogueGO;
         private UIText _textDialogue;
         private float _musicVolume = 0.1f;
-        private string _currentMusic = "confused music";
         private float _sfxVolume = 0.4f;
         private bool _isExamining = false;
         private string _oldExamineName;
         private Vector3 _oldExaminePos;
         private Quaternion _oldExamineRot;
         private GameObject _uiReticleGO;
-        private bool _hasKey;
-        private bool _hasHammer;
-        private int _unlockValue;
         private GameObject _gameUIGO;
         private UIText _insightCounter;
         private UIText _objectiveText;
+        private PlayerState _playerState;
 
         #endregion
 
@@ -95,7 +91,7 @@ namespace GDGame
         protected override void Initialize()
         {
             #region Core
-            Window.Title = "My Amazing Game";
+            Window.Title = "Dear Sober Me";
             InitializeGraphics(ScreenResolution.R_WXGA_16_10_1280x800);
             InitializeMouse();
             InitializeContext();
@@ -166,6 +162,7 @@ namespace GDGame
             CreateDialogue();
             CreateGameUI();
             GameOrchestrationSystem();
+            _playerState = new PlayerState();
 
             _sceneManager.Paused = true;
             base.Initialize();
@@ -271,7 +268,7 @@ namespace GDGame
                 _musicVolume = v/100;
 
                 EngineContext.Instance.Events.Publish(new StopMusicEvent(0));
-                EngineContext.Instance.Events.Publish(new PlayMusicEvent(_currentMusic, _musicVolume, 5));
+                EngineContext.Instance.Events.Publish(new PlayMusicEvent(_playerState.CurrentMusic, _musicVolume, 5));
             };
 
             _menuManager.SfxVolumeChanged += v =>
@@ -862,14 +859,14 @@ namespace GDGame
             {
                 ClickedItem(go);
                 _oldMouseState = _newMouseState;
-                if (_hasKey)
+                if (_playerState.HasKey)
                     return "Lock\n--\nLeft Click to Unlock";
                 else
                     return "Lock\n--\nNeed a key to Unlock";
             }
             if (go.Name.Equals("plank"))
             {
-                if (_hasHammer)
+                if (_playerState.HasHammer)
                 {
                     ClickedItem(go);
                     _oldMouseState = _newMouseState;
@@ -986,8 +983,8 @@ namespace GDGame
 
                         events.Publish(new StopMusicEvent(1));
                         events.Publish(new PlayMusicEvent("calm music", _musicVolume, 1));
-                        _currentMusic = "calm music";
-                        _insight += 4;
+                        _playerState.SetCurrentMusic("calm music");
+                        _playerState.AddInsight(4);
                         SetObjective("FIND MORE INSIGHTS");
                     }
 
@@ -996,11 +993,11 @@ namespace GDGame
                     {
                         events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
                         SetInsight();
-                        _insight++;
-                        if (_insight < 10)
-                            insightItems[_insight - 1].Enabled = true;
+                        _playerState.AddInsight(1);
+                        if (_playerState.Insight < 10)
+                            insightItems[_playerState.Insight - 1].Enabled = true;
 
-                        if (_insight > 12)
+                        if (_playerState.Insight > 12)
                         {
                             SetObjective("FIND TOOLS TO UNLOCK DOOR");
                             var key = _sceneManager.ActiveScene.Find(g => g.Name.Equals("key"));
@@ -1018,35 +1015,35 @@ namespace GDGame
                     if (go.Name.Equals("key"))
                     {
                         events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
-                        _hasKey = true;
+                        _playerState.ObtainKey();
                         go.Destroy();
                     }
                     if (go.Name.Equals("hammer"))
                     {
                         events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
-                        _hasHammer = true;
+                        _playerState.ObtainHammer();
                         go.Destroy();
                     }
 
 
-                    if (go.Name.Equals("plank") && _hasHammer)
+                    if (go.Name.Equals("plank") && _playerState.HasHammer)
                     {
-                        _unlockValue += 1;
+                        _playerState.IncreaseProgress();
                         events.Publish(new PlaySfxEvent("plank", _sfxVolume, false));
                         go.Destroy();
 
-                        if (_unlockValue >= 3)
+                        if (_playerState.UnlockedProgress >= 3)
                         {
                            openDoor();
                         }
                     }
 
-                    if (go.Name.Equals("lock") && _hasKey)
+                    if (go.Name.Equals("lock") && _playerState.HasKey)
                     {
-                        _unlockValue += 1;
+                        _playerState.IncreaseProgress();
                         events.Publish(new PlaySfxEvent("keys", _sfxVolume, false));
                         go.Destroy();
-                        if (_unlockValue >= 3)
+                        if (_playerState.UnlockedProgress >= 3)
                         {
                             openDoor();
                         }
@@ -1460,7 +1457,7 @@ namespace GDGame
                 .Do((i) => { DialogueVisible("I should really drink responsibility.."); })
                 .MoveTo(cam.Transform, new Vector3(-3.5f, 4, 11f), 2f)
                 .RotateEulerTo(cam.Transform, new Vector3(MathHelper.ToRadians(-30), MathHelper.ToRadians(170), 0), 1f)
-                .Do((i) => { DialogueVisible("THE END. Please drink responsibility! You can \nend up in scarier/dangerous situations!"); })
+                .Do((i) => { DialogueVisible("THE END. Please drink responsibility! You can end up in \nscarier/dangerous situations!"); })
                 .WaitSeconds(8)
                 .Do((i) => { DialogueVisible("Goodbye! Thanks for playing!"); })
                 .WaitSeconds(3)
@@ -1502,7 +1499,7 @@ namespace GDGame
 
         private void SetInsight()
         {
-            _insightCounter.TextProvider = () => (_insight-4)+"/9";
+            _insightCounter.TextProvider = () => (_playerState.Insight-4)+"/9";
         } 
 
         /// <summary>
