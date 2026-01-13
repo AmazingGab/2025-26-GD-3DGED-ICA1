@@ -8,7 +8,7 @@ namespace GDEngine.Core.Components
 {
 
     /// <summary>
-    /// 
+    /// Represents the state of the player in the game.
     /// </summary>
     public sealed class PlayerState : Component
     {

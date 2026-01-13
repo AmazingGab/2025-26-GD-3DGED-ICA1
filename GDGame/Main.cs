@@ -23,12 +23,14 @@ using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
+using GDGame.Demos;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Color = Microsoft.Xna.Framework.Color;
+using InventoryEvent = GDGame.Demos.InventoryEvent;
 
 
 
@@ -76,7 +78,8 @@ namespace GDGame
         private GameObject _gameUIGO;
         private UIText _insightCounter;
         private UIText _objectiveText;
-        private PlayerState _playerState;
+        private GameObject _playerGO;
+        private bool _introPlayed;
 
         #endregion
 
@@ -162,10 +165,18 @@ namespace GDGame
             CreateDialogue();
             CreateGameUI();
             GameOrchestrationSystem();
-            _playerState = new PlayerState();
+            InitializePlayerGO();
 
             _sceneManager.Paused = true;
             base.Initialize();
+        }
+
+        private void InitializePlayerGO()
+        {
+            _playerGO = new GameObject(AppData.PLAYER_NAME);
+            _playerGO.AddComponent<InventoryEventListener>();
+            _playerGO.AddComponent<PlayerState>();
+            _sceneManager.ActiveScene.Add(_playerGO);
         }
 
         /// <summary>
@@ -253,8 +264,12 @@ namespace GDGame
             {
                 _sceneManager.Paused = false;
                 _menuManager.HideMenus();
-                var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>()?.Orchestrator;
-                orchestrator.Start("intro", _sceneManager.ActiveScene, EngineContext.Instance);
+                if (!_introPlayed)
+                {
+                    _introPlayed = true;
+                    var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>()?.Orchestrator;
+                    orchestrator.Start("intro", _sceneManager.ActiveScene, EngineContext.Instance);
+                }
                 IsMouseVisible = false;
             };
 
@@ -266,6 +281,7 @@ namespace GDGame
             _menuManager.MusicVolumeChanged += v =>
             {
                 _musicVolume = v/100;
+                var _playerState = _playerGO.GetComponent<PlayerState>();
 
                 EngineContext.Instance.Events.Publish(new StopMusicEvent(0));
                 EngineContext.Instance.Events.Publish(new PlayMusicEvent(_playerState.CurrentMusic, _musicVolume, 5));
@@ -832,6 +848,7 @@ namespace GDGame
         /// <reused>Based on interaction logic developed in GCA Group Project</reused>
         private string HandleObjectHit(GameObject go)
         {
+            var _playerState = _playerGO.GetComponent<PlayerState>();
             if (go.Name.Contains("photo"))
             {
                 ClickedItem(go);
@@ -972,6 +989,7 @@ namespace GDGame
         private void ClickedItem(GameObject go)
         {
             var events = EngineContext.Instance.Events;
+            var _playerState = _playerGO.GetComponent<PlayerState>();
             if (_newMouseState.LeftButton == ButtonState.Pressed && _oldMouseState.LeftButton == ButtonState.Released)
             {
                 if (!_isExamining)
@@ -1006,6 +1024,7 @@ namespace GDGame
                             hammer.Enabled = true;
                         }
 
+                        events.Publish(new InventoryEvent(_playerGO, go.Name, true));
                         go.Enabled = false;
                         go.Name = "collected";
                         //cant destroy
@@ -1015,12 +1034,14 @@ namespace GDGame
                     if (go.Name.Equals("key"))
                     {
                         events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
+                        events.Publish(new InventoryEvent(_playerGO, go.Name, true));
                         _playerState.ObtainKey();
                         go.Destroy();
                     }
                     if (go.Name.Equals("hammer"))
                     {
                         events.Publish(new PlaySfxEvent("collect", _sfxVolume, false));
+                        events.Publish(new InventoryEvent(_playerGO, go.Name, true));
                         _playerState.ObtainHammer();
                         go.Destroy();
                     }
@@ -1499,6 +1520,7 @@ namespace GDGame
 
         private void SetInsight()
         {
+            var _playerState = _playerGO.GetComponent<PlayerState>();
             _insightCounter.TextProvider = () => (_playerState.Insight-4)+"/9";
         } 
 

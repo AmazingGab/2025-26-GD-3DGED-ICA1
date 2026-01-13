@@ -109,7 +109,7 @@ namespace GDGame
 
 
         #region Level
-        public static readonly string LEVEL_1_NAME = "outdoors - level 1";
+        public static readonly string LEVEL_1_NAME = "The Weird Room";
        
 
         #endregion
