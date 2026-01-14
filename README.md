@@ -12,23 +12,65 @@ BY Gabrielius Mizutavicius - D00265365
 
 ## Narrative Summary
 
-"DEAR SOBER me" is a short, single room investigative game as required for the brief.
+"DEAR SOBER me" is a short, single room investigative game as required by the brief.
 
-The player wakes up after a blackout in an unfamiliar room with no memory on how they ended up there. A note addressing to their sober self apologises for the night and hints at unsettling experience the drunk self had.
+The player wakes up after a blackout in an unfamiliar room with no memory on how they ended up there. A note addressed to their sober self apologises for the night and hints at unsettling experience the drunk self had.
 
-You examine objects, collecting scattered belongings and polaroid pictures with some notes on them. Using such clues the player can reconstruct the events of the night. The more they find the more new interactions are available. To free yourself from the room you have to un-barricade the door and leave behind a reminder about drinking responsibly and their consequences.
+You examine objects, collecting scattered belongings and polaroid pictures with some notes on them. The player can reconstruct the events of the night. The more they find the more new interactions are available. To free yourself from the room you have to un-barricade the door and leave behind a reminder about responsible drinking and its consequences.
 
 ---
 
 ## Object Data Model
 
-wip
+Interactive objects are GameObjects and have components attached like the colliders to allow raycasting. Objects don't store any interaction. It is hardcoded within Main using the object's name and the current player state. Progression is controlled by the player state component like ownership and insight but it is checked in main.
 
 ---
 
 ## Interaction Pipeline
 
-wip
+All interactions are based off raycasting to make the 4 verbs work.
+
+### Examine
+
+When hovering over the object, it displays the name and available interactions. On click, the player enters the examination mode where the camera is frozen, object is put in front of the camera, dialogue is shown and "HM" SFX is played.
+
+> Hover
+
+![Image](./screenshots/examine.png)
+
+> Click
+
+![Image](./screenshots/examine2.png)
+
+### Collect
+
+On Click, the object is hidden from the player, added to the inventory, SFX is played and player's insight increases.
+
+![Image](./screenshots/collect.png)
+
+### Activate
+
+Certain objects become available after reaching specific insight level. Activating those objects reveals more objects like tools which allows the player to interact with the door.
+
+> Before Pickup
+
+![Image](./screenshots/activate.png)
+
+> After Pickup
+
+![Image](./screenshots/activate2.png)
+
+### Use
+
+Collected objects are used for progression. As the player gains more objects and insight, new objects appear which allow further progression and eventually escaping the room.
+
+> When insight level is at 9, tools appear.
+
+![Image](./screenshots/use.png)
+
+> Picking up the tools lets you unlock the door.
+
+![Image](./screenshots/use2.png)
 
 ---
 
@@ -42,7 +84,7 @@ The music has two states:
 There is many SFX in the game:
 
 - Examine, Collect, Activate, Use
-- Self Talk to add more personality
+- Self Talk at the beginning to add more personality
 - Headache (intense sound just for the person themselves to briefly feel it)
 - Door knocking being the starting point
 
@@ -62,26 +104,35 @@ There will also be camera curve of the player waking up out of the bed.
 
 ## Design Pattern
 
-wip
+The project follows the same pattern that the original code started with which is a component based design with event driven communication between components.
+
+PlayerState, inventory, audio, camera, spacial audio emitter and others are implemented as components.
+
+Events like audio change/play/stop, add to inventory and UI button clicking are used to communicate between components easier.
 
 ---
 
 ## Technical Excellence Feature
 
-Option B and C wip
+I decided to work on the Option B - Orchestration Sequence Extension within my game.
+
+They are both used in the introduction and then the outro of the game. Both do sequenced changes to UI, transforms and camera. One plays the self talk and timed steps for the dialogue to appear at the exact time and then to play background music.
+
+![Image](./screenshots/orchestration.png)
 
 ---
 
 ## Design Rationale
 
-wip
+I decided to use Orchestration Sequence Extension as I wanted to have a cutscene for both the introduction of the game and the outro. This involved camera manipulation (waking up/walking to the door), object transforms (door opening) and dialogues (self-talk caption / outro text) that had to be performed in timed order which I felt using the orchestration would be beneficial for the project.
 
 ---
 
 ## Build & Run Instructions
 
-**Final Build File will be here:**
-[Build File](../)
+Final Build File will be here:
+
+[[Build File]](./Final%20Build/)
 
 ---
 
@@ -111,15 +162,19 @@ Many were edited by me to cover up faces and style it to my liking.
 ### Generated using raphael.app
 
 Image 1 : "Generate: a guy with blue jeans and green shirt partying with friends"
+
 ![image](./GDGame/Content/Assets/Textures/Items/photo1.png)
 
 Image 2 : "Generate: blue jeans and green shirt guy getting uncomfortable and a bit drowsy within the party within some in the background lurking in the shadows"
+
 ![image](./GDGame/Content/Assets/Textures/Items/photo2.png)
 
 Image 3 : "Generate: blue jeans and green shirt guy walking down the street worried, scared and stumbling while a random person in the shadows follows them at night."
+
 ![image](./GDGame/Content/Assets/Textures/Items/photo3.png)
 
 Image 4 : "Generate: taking a blurry picture of a hallway at night white dimmed light seeing a shadow figure in the far distance."
+
 ![image](./GDGame/Content/Assets/Textures/Items/photo4.png)
 
 ### Generated using craiyon.com
