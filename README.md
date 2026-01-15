@@ -4,11 +4,9 @@
 
 BY Gabrielius Mizutavicius - D00265365
 
----
-
 ## Screencast
 
-**Screencast Link:** https://
+**Screencast Link:** [[YouTube Link]](https://youtu.be/hAMjaUAM9U8)
 
 ## Narrative Summary
 
@@ -18,13 +16,9 @@ The player wakes up after a blackout in an unfamiliar room with no memory on how
 
 You examine objects, collecting scattered belongings and polaroid pictures with some notes on them. The player can reconstruct the events of the night. The more they find the more new interactions are available. To free yourself from the room you have to un-barricade the door and leave behind a reminder about responsible drinking and its consequences.
 
----
-
 ## Object Data Model
 
 Interactive objects are GameObjects and have components attached like the colliders to allow raycasting. Objects don't store any interaction. It is hardcoded within Main using the object's name and the current player state. Progression is controlled by the player state component like ownership and insight but it is checked in main.
-
----
 
 ## Interaction Pipeline
 
@@ -72,8 +66,6 @@ Collected objects are used for progression. As the player gains more objects and
 
 ![Image](./screenshots/use2.png)
 
----
-
 ## Audio Design
 
 The music has two states:
@@ -90,8 +82,6 @@ There is many SFX in the game:
 
 I added two spatial exterior ambiences which can be heard occasionally like the cars beeping and the birds chirping.
 
----
-
 ## Camera Behaviour
 
 There is a standard non colliding camera for the player to explore the map with. I tried physics and unfortunately spent so much time that it was better to go with this.
@@ -99,8 +89,6 @@ There is a standard non colliding camera for the player to explore the map with.
 There is the examination mode where the camera is frozen and item it put closer for the player to see.
 
 There will also be camera curve of the player waking up out of the bed.
-
----
 
 ## Design Pattern
 
@@ -110,8 +98,6 @@ PlayerState, inventory, audio, camera, spacial audio emitter and others are impl
 
 Events like audio change/play/stop, add to inventory and UI button clicking are used to communicate between components easier.
 
----
-
 ## Technical Excellence Feature
 
 I decided to work on the Option B - Orchestration Sequence Extension within my game.
@@ -120,21 +106,13 @@ They are both used in the introduction and then the outro of the game. Both do s
 
 ![Image](./screenshots/orchestration.png)
 
----
-
 ## Design Rationale
 
 I decided to use Orchestration Sequence Extension as I wanted to have a cutscene for both the introduction of the game and the outro. This involved camera manipulation (waking up/walking to the door), object transforms (door opening) and dialogues (self-talk caption / outro text) that had to be performed in timed order which I felt using the orchestration would be beneficial for the project.
 
----
-
 ## Build & Run Instructions
 
-Final Build File will be here:
-
-[[Build File]](./Final%20Build/)
-
----
+Final Build File will be here: [[Build File]](./Final%20Build/)
 
 ## References
 

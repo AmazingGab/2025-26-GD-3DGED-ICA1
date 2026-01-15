@@ -53,7 +53,7 @@ namespace GDEngine.Core.Components
             if (GameObject == null)
                 throw new System.NullReferenceException(nameof(GameObject));
             var events = EngineContext.Instance.Events;
-            events.Publish(new PlaySfxEvent(sound, 0.5f, true, GameObject.Transform));
+            events.Publish(new PlaySfxEvent(sound, 1f, true, GameObject.Transform));
         }
 
         protected override void Update(float deltaTime)
@@ -64,7 +64,7 @@ namespace GDEngine.Core.Components
 
             if (timeLeft > random.Next(min, max))
             {
-                events.Publish(new PlaySfxEvent(sound, 0.5f, true, GameObject.Transform));
+                events.Publish(new PlaySfxEvent(sound, 1f, true, GameObject.Transform));
                 timeLeft = 0;
             }
             
