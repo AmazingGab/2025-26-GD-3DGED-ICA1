@@ -30,11 +30,11 @@ When hovering over the object, it displays the name and available interactions. 
 
 > Hover
 
-![Image](./screenshots/examine.png)
+![Image](./screenshots/examine2.png)
 
 > Click
 
-![Image](./screenshots/examine2.png)
+![Image](./screenshots/examine.png)
 
 ### Collect
 
@@ -48,11 +48,11 @@ Certain objects become available after reaching specific insight level. Activati
 
 > Before Pickup
 
-![Image](./screenshots/activate.png)
+![Image](./screenshots/activate2.png)
 
 > After Pickup
 
-![Image](./screenshots/activate2.png)
+![Image](./screenshots/activate.png)
 
 ### Use
 
